@@ -31,4 +31,20 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the projects the user belongs to.
+     */
+    public function projects(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_user', 'user_id', 'project_id')->withTimestamps();
+    }
+
+    /**
+     * Get the tasks assigned to the user.
+     */
+    public function tasks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Task::class, 'assignee_id');
+    }
 }
