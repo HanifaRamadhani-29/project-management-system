@@ -78,8 +78,10 @@ class ProjectController extends Controller
     {
         $user = auth()->user();
         
+        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
+
         // Authorize: Super Admin OR Project Manager assigned to the project
-        if (!$user->hasRole('Super Admin') && $project->manager_id !== $user->id) {
+        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -110,8 +112,10 @@ class ProjectController extends Controller
     {
         $user = auth()->user();
 
+        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
+
         // Authorize: Super Admin OR Project Manager assigned to the project
-        if (!$user->hasRole('Super Admin') && $project->manager_id !== $user->id) {
+        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -128,8 +132,10 @@ class ProjectController extends Controller
     {
         $user = auth()->user();
 
+        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
+
         // Authorize
-        if (!$user->hasRole('Super Admin') && $project->manager_id !== $user->id) {
+        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -150,8 +156,10 @@ class ProjectController extends Controller
     {
         $user = auth()->user();
 
+        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
+
         // Authorize
-        if (!$user->hasRole('Super Admin') && $project->manager_id !== $user->id) {
+        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -159,5 +167,27 @@ class ProjectController extends Controller
 
         return redirect()->route('projects.index')
             ->with('success', 'Member removed from project successfully.');
+    }
+
+    /**
+     * Display the specified project.
+     */
+    public function show(Project $project): Response
+    {
+        $user = auth()->user();
+
+        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
+
+        // Authorize: Super Admin OR Project Manager OR Project Member
+        if (!$isSuperAdmin 
+            && $project->manager_id !== $user->id 
+            && !$project->members->contains($user->id)
+        ) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return Inertia::render('Projects/Show', [
+            'project' => $project->load(['manager', 'members']),
+        ]);
     }
 }

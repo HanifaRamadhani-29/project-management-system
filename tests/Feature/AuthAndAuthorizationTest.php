@@ -129,9 +129,9 @@ class AuthAndAuthorizationTest extends TestCase
         $this->assertEquals('Updated by Admin', $project->fresh()->name);
 
         $response = $this->actingAs($admin)
-            ->delete(route('projects.destroy', $project->slug));
+            ->delete(route('projects.destroy', $project->fresh()->slug));
 
-        $response->assertRedirect('/dashboard');
+        $response->assertRedirect('/projects');
         $this->assertDatabaseMissing('projects', ['id' => $project->id]);
     }
 }

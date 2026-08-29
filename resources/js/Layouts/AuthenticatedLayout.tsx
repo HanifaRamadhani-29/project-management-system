@@ -18,11 +18,11 @@ export default function Authenticated({
     header,
     children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
-    const user = usePage().props.auth.user;
+    const user = usePage().props.auth?.user;
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+    const [showingUserDropdown, setShowingUserDropdown] = useState(false);
 
-    const isSuperAdmin = user.role === 'super_admin' || (user.roles && user.roles.includes("Super Admin"));
+    const isSuperAdmin = user?.role === 'super_admin' || (user?.roles && user.roles.includes("Super Admin"));
 
     const menuItems = [
         { name: "Dashboard", href: route("dashboard"), icon: LayoutDashboard, active: route().current("dashboard") },
@@ -60,7 +60,7 @@ export default function Authenticated({
                                 href={item.href}
                                 className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition duration-150 ${
                                     item.active
-                                        ? "bg-indigo-50 text-indigo-650 font-bold"
+                                        ? "bg-indigo-50 text-indigo-655 font-bold"
                                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                                 }`}
                             >
@@ -70,6 +70,19 @@ export default function Authenticated({
                         );
                     })}
                 </nav>
+
+                {/* Quick Logout at bottom of sidebar */}
+                <div className="p-4 border-t border-slate-200">
+                    <Link
+                        method="post"
+                        href={route('logout')}
+                        as="button"
+                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition duration-150"
+                    >
+                        <LogOut className="w-4.5 h-4.5 text-rose-500" />
+                        Log Out
+                    </Link>
+                </div>
             </aside>
 
             {/* Sidebar Mobile Drawer */}
@@ -134,34 +147,42 @@ export default function Authenticated({
                     {/* User Profile Action Dropdown */}
                     <div className="relative">
                         <button
-                            onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                            className="flex items-center gap-2 pl-3 py-1.5 pr-2.5 hover:bg-slate-50 rounded-xl transition text-slate-700"
+                            onClick={() => setShowingUserDropdown(!showingUserDropdown)}
+                            className="relative z-50 flex items-center gap-2 pl-3 py-1.5 pr-2.5 hover:bg-slate-50 rounded-xl transition text-slate-700"
                         >
                             <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold text-white uppercase shadow-sm">
-                                {user.name.substring(0, 2).toUpperCase()}
+                                {user?.name ? user.name.substring(0, 2).toUpperCase() : 'US'}
                             </div>
-                            <span className="hidden sm:inline text-sm font-semibold">{user.name}</span>
+                            <span className="hidden sm:inline text-sm font-semibold">{user?.name || 'User'}</span>
                             <ChevronDown className="w-4 h-4 text-slate-400" />
                         </button>
 
-                        {isUserDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-150 rounded-2xl shadow-xl py-2 z-50 text-xs font-medium text-slate-650">
+                        {/* Click-outside backdrop */}
+                        {showingUserDropdown && (
+                            <div 
+                                className="fixed inset-0 z-40 bg-transparent cursor-default" 
+                                onClick={() => setShowingUserDropdown(false)} 
+                            />
+                        )}
+
+                        {showingUserDropdown && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-150 rounded-2xl shadow-xl py-2 z-50 text-xs font-medium text-slate-655">
                                 <Link
                                     href={route("profile.edit")}
-                                    onClick={() => setIsUserDropdownOpen(false)}
+                                    onClick={() => setShowingUserDropdown(false)}
                                     className="flex items-center gap-2 px-4 py-2.5 hover:bg-slate-50 hover:text-slate-900 transition w-full text-left"
                                 >
                                     <UserIcon className="w-4 h-4 text-slate-400" />
                                     Profile Settings
                                 </Link>
                                 <Link
-                                    href={route("logout")}
                                     method="post"
+                                    href={route('logout')}
                                     as="button"
-                                    onClick={() => setIsUserDropdownOpen(false)}
-                                    className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-rose-50 hover:text-rose-600 text-left transition"
+                                    onClick={() => setShowingUserDropdown(false)}
+                                    className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition"
                                 >
-                                    <LogOut className="w-4 h-4 text-rose-450" />
+                                    <LogOut className="w-4 h-4 text-rose-550" />
                                     Log Out
                                 </Link>
                             </div>

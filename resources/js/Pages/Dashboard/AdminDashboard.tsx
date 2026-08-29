@@ -1,387 +1,333 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { AdminDashboardProps } from "@/types/dashboard";
 import { Head, Link } from "@inertiajs/react";
-import {
-    Briefcase,
-    Play,
-    AlertTriangle,
-    CheckSquare,
-    CheckCircle2,
-    Clock,
-    TrendingUp,
+import { 
+    Folder, 
+    AlertTriangle, 
+    CheckSquare, 
+    Clock, 
+    BarChart3, 
+    Layers, 
     Users,
     ChevronRight,
-    UserCheck,
+    LayoutDashboard
 } from "lucide-react";
+
+interface Stats {
+    total_projects?: string | number;
+    active_projects?: string | number;
+    overdue_projects?: string | number;
+    total_tasks?: string | number;
+    completed_tasks?: string | number;
+    overdue_tasks?: string | number;
+    completion_rate?: number;
+}
+
+interface MemberWorkload {
+    name: string;
+    task_count?: number;
+    active_tasks_count?: number;
+}
+
+interface Project {
+    id: number;
+    name: string;
+    slug: string;
+    status: string;
+    description?: string;
+    deadline?: string;
+    manager?: {
+        name: string;
+    } | null;
+    progress?: number;
+}
+
+interface AdminDashboardProps {
+    stats?: Stats;
+    task_distribution?: Record<string, number>;
+    tasks_by_status?: Record<string, number>;
+    member_workloads?: MemberWorkload[];
+    team_workloads?: MemberWorkload[];
+    recent_projects?: Project[];
+}
 
 export default function AdminDashboard({
     stats,
+    task_distribution,
     tasks_by_status,
+    member_workloads,
     team_workloads,
-    recent_projects,
+    recent_projects
 }: AdminDashboardProps) {
-    // Helper to render task status progress bar widths
-    const calculateTaskStatusPercentage = (count: number) => {
-        const total = Object.values(tasks_by_status).reduce((a, b) => a + b, 0);
-        return total > 0 ? (count / total) * 100 : 0;
-    };
+    
+    // Fallback handlers to prevent blank screen crashes
+    const safeStats: Stats = stats || {};
+    const safeDistribution = task_distribution || tasks_by_status || {};
+    const safeWorkloads = member_workloads || team_workloads || [];
+    const safeRecentProjects = recent_projects || [];
 
-    // Helper for status badge styling in dark theme
-    const getProjectStatusBadgeClass = (status: string) => {
-        switch (status) {
-            case "active":
-                return "bg-emerald-950/65 text-emerald-400 border border-emerald-900/60";
-            case "completed":
-                return "bg-blue-950/65 text-blue-400 border border-blue-900/60";
-            case "on_hold":
-                return "bg-amber-950/65 text-amber-400 border border-amber-900/60";
-            case "planning":
+    const getStatusClass = (status: string) => {
+        const cleanStatus = (status || '').toLowerCase();
+        switch (cleanStatus) {
+            case 'completed':
+                return 'bg-emerald-50 text-emerald-600 border border-emerald-100';
+            case 'active':
+                return 'bg-indigo-50 text-indigo-600 border border-indigo-100';
+            case 'on_hold':
+                return 'bg-amber-50 text-amber-600 border border-amber-100';
+            case 'cancelled':
+                return 'bg-rose-50 text-rose-600 border border-rose-100';
             default:
-                return "bg-slate-800 text-slate-300 border border-slate-700";
+                return 'bg-slate-100 text-slate-600 border border-slate-200';
         }
     };
 
     return (
-        <div className="bg-slate-950 min-h-screen -m-6 md:-m-8 p-6 md:p-8 text-slate-100">
-            <AuthenticatedLayout
-                header={
-                    <div className="flex items-center justify-between w-full">
-                        <div>
-                            <h2 className="text-2xl font-bold tracking-tight text-slate-100">
-                                Admin Command Center
-                            </h2>
-                            <p className="text-sm text-slate-400">
-                                Enterprise-wide system aggregates & workloads
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold bg-emerald-950 text-emerald-400 border border-emerald-900 rounded-full">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                Super Admin Mode
+        <AuthenticatedLayout
+            header={
+                <h2 className="text-xl font-bold leading-tight text-slate-800 tracking-tight flex items-center gap-2">
+                    <LayoutDashboard className="w-5 h-5 text-indigo-600" />
+                    Super Admin Console
+                </h2>
+            }
+        >
+            <Head title="Super Admin Dashboard" />
+
+            <div className="space-y-8 font-sans text-slate-800">
+                {/* 1. Dashboard Welcome & Overview */}
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-6">
+                    <div>
+                        <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+                            System-Wide Analytics
+                        </h1>
+                        <p className="text-sm text-slate-500 mt-1 font-medium">
+                            Real-time aggregates and resource allocation metrics.
+                        </p>
+                    </div>
+                    <span className="px-3.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-full w-max">
+                        Admin Mode
+                    </span>
+                </div>
+
+                {/* 2. Key Metrics Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {/* Total Projects */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
+                                Total Projects
+                            </span>
+                            <span className="text-3xl font-black text-slate-900 block">
+                                {safeStats.total_projects ?? "0"}
                             </span>
                         </div>
-                    </div>
-                }
-            >
-                <Head title="Super Admin Dashboard" />
-
-                <div className="space-y-8 mt-6">
-                    {/* Stat Cards Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {/* Total Projects */}
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md hover:border-slate-700 transition duration-200">
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-1">
-                                    <span className="text-sm font-semibold text-slate-400">
-                                        Total Projects
-                                    </span>
-                                    <div className="text-4xl font-extrabold tracking-tight text-white mt-1">
-                                        {stats.total_projects}
-                                    </div>
-                                    <span className="text-xs text-slate-500 font-semibold block">
-                                        Active:{" "}
-                                        <span className="text-emerald-400">
-                                            {stats.active_projects}
-                                        </span>
-                                    </span>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-slate-800 text-emerald-400 border border-slate-700 flex items-center justify-center shadow-inner">
-                                    <Briefcase className="w-6 h-6" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Overdue Projects */}
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md hover:border-slate-700 transition duration-200">
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-1">
-                                    <span className="text-sm font-semibold text-slate-400">
-                                        Overdue Projects
-                                    </span>
-                                    <div className="text-4xl font-extrabold tracking-tight text-rose-400 mt-1">
-                                        {stats.overdue_projects}
-                                    </div>
-                                    <span className="text-xs text-slate-500 font-semibold block">
-                                        Requires PM review
-                                    </span>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-rose-950/35 text-rose-400 border border-rose-900/40 flex items-center justify-center shadow-inner">
-                                    <AlertTriangle className="w-6 h-6" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Total Tasks */}
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md hover:border-slate-700 transition duration-200">
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-1">
-                                    <span className="text-sm font-semibold text-slate-400">
-                                        Total Tasks
-                                    </span>
-                                    <div className="text-4xl font-extrabold tracking-tight text-white mt-1">
-                                        {stats.total_tasks}
-                                    </div>
-                                    <span className="text-xs text-slate-500 font-semibold block">
-                                        Completed:{" "}
-                                        <span className="text-indigo-400">
-                                            {stats.completed_tasks}
-                                        </span>
-                                    </span>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-slate-800 text-indigo-400 border border-slate-700 flex items-center justify-center shadow-inner">
-                                    <CheckSquare className="w-6 h-6" />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Completion Rate */}
-                        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md hover:border-slate-700 transition duration-200">
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-1">
-                                    <span className="text-sm font-semibold text-slate-400">
-                                        Task Completion Rate
-                                    </span>
-                                    <div className="text-4xl font-extrabold tracking-tight text-emerald-400 mt-1">
-                                        {stats.completion_rate}%
-                                    </div>
-                                    <span className="text-xs text-slate-500 font-semibold block">
-                                        Overdue Tasks:{" "}
-                                        <span className="text-rose-400">
-                                            {stats.overdue_tasks}
-                                        </span>
-                                    </span>
-                                </div>
-                                <div className="w-12 h-12 rounded-xl bg-emerald-950/35 text-emerald-400 border border-emerald-900/40 flex items-center justify-center shadow-inner">
-                                    <TrendingUp className="w-6 h-6" />
-                                </div>
-                            </div>
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-indigo-600">
+                            <Folder className="w-5 h-5" />
                         </div>
                     </div>
 
-                    {/* Progress Section: Task status distribution */}
-                    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md">
-                        <h3 className="font-bold text-base text-slate-200 mb-6">
-                            Global Task Status Distribution
+                    {/* Active Projects */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
+                                Active Projects
+                            </span>
+                            <span className="text-3xl font-black text-indigo-650 block">
+                                {safeStats.active_projects ?? "0"}
+                            </span>
+                        </div>
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-indigo-600">
+                            <Folder className="w-5 h-5" />
+                        </div>
+                    </div>
+
+                    {/* Overdue Projects */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex items-center justify-between">
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
+                                Overdue Projects
+                            </span>
+                            <span className="text-3xl font-black text-rose-600 block">
+                                {safeStats.overdue_projects ?? "0"}
+                            </span>
+                        </div>
+                        <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600">
+                            <AlertTriangle className="w-5 h-5" />
+                        </div>
+                    </div>
+
+                    {/* Completion Rate */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm flex flex-col justify-between gap-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
+                                Task Completion Rate
+                            </span>
+                            <span className="text-lg font-black text-indigo-650">
+                                {safeStats.completion_rate ?? 0}%
+                            </span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/50">
+                            <div 
+                                className="bg-gradient-to-r from-indigo-500 to-cyan-500 h-2.5 rounded-full" 
+                                style={{ width: `${safeStats.completion_rate ?? 0}%` }} 
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Task Metric Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {/* Total Tasks */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                        <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl text-slate-500">
+                            <Layers className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Tasks</span>
+                            <span className="text-xl font-extrabold text-slate-800">{safeStats.total_tasks ?? "0"}</span>
+                        </div>
+                    </div>
+
+                    {/* Completed Tasks */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                        <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600">
+                            <CheckSquare className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Completed Tasks</span>
+                            <span className="text-xl font-extrabold text-emerald-650">{safeStats.completed_tasks ?? "0"}</span>
+                        </div>
+                    </div>
+
+                    {/* Overdue Tasks */}
+                    <div className="bg-white border border-slate-200 p-5 rounded-2xl flex items-center gap-4 shadow-sm">
+                        <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl text-rose-600">
+                            <Clock className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Overdue Tasks</span>
+                            <span className="text-xl font-extrabold text-rose-600">{safeStats.overdue_tasks ?? "0"}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Details Section: Workload & Task Distribution */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Task Status Distribution */}
+                    <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3.5 mb-4 flex items-center gap-2">
+                            <BarChart3 className="w-4 h-4 text-indigo-500" />
+                            Task Status Distribution
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-                            {(Object.keys(tasks_by_status) as Array<
-                                keyof typeof tasks_by_status
-                            >).map((status) => {
-                                const count = tasks_by_status[status];
-                                const percentage =
-                                    calculateTaskStatusPercentage(count);
-
-                                const colors = {
-                                    backlog: "bg-slate-700 text-slate-300",
-                                    todo: "bg-blue-600 text-blue-300",
-                                    in_progress: "bg-amber-600 text-amber-300",
-                                    review: "bg-purple-600 text-purple-300",
-                                    done: "bg-emerald-600 text-emerald-300",
-                                };
-
-                                const statusNames = {
-                                    backlog: "Backlog",
-                                    todo: "To Do",
-                                    in_progress: "In Progress",
-                                    review: "Under Review",
-                                    done: "Done",
-                                };
-
+                        <div className="space-y-4">
+                            {Object.entries(safeDistribution).map(([status, count]) => {
+                                const total = Number(safeStats.total_tasks) || 0;
+                                const percentage = total > 0 
+                                    ? Math.round((Number(count) / total) * 100) 
+                                    : 0;
                                 return (
-                                    <div
-                                        key={status}
-                                        className="bg-slate-950 border border-slate-850 p-4 rounded-xl space-y-3"
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-slate-400 capitalize">
-                                                {statusNames[status]}
-                                            </span>
-                                            <span className="text-xs font-extrabold text-white">
-                                                {count}
-                                            </span>
+                                    <div key={status} className="space-y-1.5">
+                                        <div className="flex items-center justify-between text-xs font-semibold">
+                                            <span className="capitalize text-slate-600">{status.replace('_', ' ')}</span>
+                                            <span className="text-slate-500">{count} tasks ({percentage}%)</span>
                                         </div>
-                                        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                            <div
-                                                className={`h-full rounded-full ${
-                                                    colors[status].split(" ")[0]
-                                                }`}
-                                                style={{
-                                                    width: `${percentage}%`,
-                                                }}
+                                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200/50">
+                                            <div 
+                                                className="bg-indigo-500 h-2 rounded-full" 
+                                                style={{ width: `${percentage}%` }} 
                                             />
                                         </div>
                                     </div>
                                 );
                             })}
+                            {Object.keys(safeDistribution).length === 0 && (
+                                <div className="text-xs text-slate-450 italic py-6 text-center">
+                                    No task distribution data available.
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    {/* Lower Sections */}
-                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                        {/* Recent Projects Table (3/5 columns width) */}
-                        <div className="lg:col-span-3 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md flex flex-col">
-                            <div className="flex items-center justify-between mb-5">
-                                <h3 className="font-bold text-base text-slate-200">
-                                    Recent Enterprise Projects
-                                </h3>
-                                <Link
-                                    href={route("projects.index")}
-                                    className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition"
-                                >
-                                    Manage All
-                                    <ChevronRight className="w-4 h-4" />
-                                </Link>
-                            </div>
-
-                            <div className="flex-1 overflow-x-auto">
-                                <table className="w-full border-collapse text-left">
-                                    <thead>
-                                        <tr className="border-b border-slate-800 text-slate-400 text-xs font-semibold uppercase">
-                                            <th className="pb-3 pr-4">Project</th>
-                                            <th className="pb-3 px-4">Status</th>
-                                            <th className="pb-3 px-4">PM</th>
-                                            <th className="pb-3 px-4">Deadline</th>
-                                            <th className="pb-3 pl-4 text-right">
-                                                Completion
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-850/60 text-sm">
-                                        {recent_projects.length > 0 ? (
-                                            recent_projects.map((project) => (
-                                                <tr
-                                                    key={project.id}
-                                                    className="group hover:bg-slate-950/20 transition duration-150"
-                                                >
-                                                    <td className="py-3.5 pr-4">
-                                                        <Link
-                                                            href={route(
-                                                                "projects.kanban",
-                                                                project.slug
-                                                            )}
-                                                            className="font-semibold text-slate-200 group-hover:text-indigo-400 transition"
-                                                        >
-                                                            {project.name}
-                                                        </Link>
-                                                    </td>
-                                                    <td className="py-3.5 px-4">
-                                                        <span
-                                                            className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold capitalize ${getProjectStatusBadgeClass(
-                                                                project.status
-                                                            )}`}
-                                                        >
-                                                            {project.status.replace(
-                                                                "_",
-                                                                " "
-                                                            )}
-                                                        </span>
-                                                    </td>
-                                                    <td className="py-3.5 px-4 text-slate-300 font-medium">
-                                                        {project.manager?.name || (
-                                                            <span className="text-slate-600">
-                                                                Unassigned
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3.5 px-4 text-slate-400 font-medium">
-                                                        {project.deadline ? (
-                                                            <span className="flex items-center gap-1.5">
-                                                                <Clock className="w-3.5 h-3.5 text-slate-500" />
-                                                                {
-                                                                    project.deadline
-                                                                }
-                                                            </span>
-                                                        ) : (
-                                                            <span className="text-slate-600">
-                                                                N/A
-                                                            </span>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3.5 pl-4">
-                                                        <div className="flex items-center justify-end gap-3">
-                                                            <div className="w-20 bg-slate-850 h-1.5 rounded-full overflow-hidden hidden sm:block">
-                                                                <div
-                                                                    className="bg-emerald-500 h-full rounded-full"
-                                                                    style={{
-                                                                        width: `${project.progress}%`,
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <span className="text-xs font-bold text-slate-300 shrink-0">
-                                                                {
-                                                                    project.progress
-                                                                }%
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                                <td
-                                                    colSpan={5}
-                                                    className="py-6 text-center text-slate-500 font-medium"
-                                                >
-                                                    No projects found.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {/* Team Workloads (2/5 columns width) */}
-                        <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-md">
-                            <div className="flex items-center justify-between mb-5">
-                                <h3 className="font-bold text-base text-slate-200">
-                                    Team Workloads
-                                </h3>
-                                <div className="text-[10px] font-bold text-slate-500 tracking-wider uppercase">
-                                    Top 5 Active PM/Members
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                {team_workloads.length > 0 ? (
-                                    team_workloads.map((member) => (
-                                        <div
-                                            key={member.id}
-                                            className="flex items-center justify-between p-3.5 bg-slate-950/70 border border-slate-850/80 rounded-xl hover:border-slate-800 transition duration-150"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center text-xs font-bold uppercase shadow-sm">
-                                                    {member.name
-                                                        .substring(0, 2)
-                                                        .toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <span className="font-bold text-sm text-slate-200 block">
-                                                        {member.name}
-                                                    </span>
-                                                    <span className="text-[10px] text-slate-500 font-medium block">
-                                                        {member.email}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 text-indigo-400 rounded-lg shadow-inner">
-                                                <UserCheck className="w-3.5 h-3.5" />
-                                                <span className="text-xs font-extrabold">
-                                                    {member.active_tasks_count}
-                                                </span>
-                                            </div>
+                    {/* Member Workloads */}
+                    <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3.5 mb-4 flex items-center gap-2">
+                            <Users className="w-4 h-4 text-cyan-600" />
+                            Active Member Workload
+                        </h3>
+                        <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
+                            {safeWorkloads.length > 0 ? (
+                                safeWorkloads.map((member, index) => {
+                                    const taskCount = member.task_count ?? member.active_tasks_count ?? 0;
+                                    return (
+                                        <div key={member.name || index} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                                            <span className="text-xs font-bold text-slate-700">{member.name}</span>
+                                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black ${
+                                                taskCount > 5 
+                                                    ? 'bg-rose-50 text-rose-600 border border-rose-100' 
+                                                    : 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                                            }`}>
+                                                {taskCount} active tasks
+                                            </span>
                                         </div>
-                                    ))
-                                ) : (
-                                    <div className="py-6 text-center text-slate-500 font-medium">
-                                        No active workloads recorded.
-                                    </div>
-                                )}
-                            </div>
+                                    );
+                                })
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-slate-400 text-xs py-12 text-center">
+                                    No active members found.
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
-            </AuthenticatedLayout>
-        </div>
+
+                {/* 5. Recent Projects Table */}
+                <div className="bg-white border border-slate-200 p-6 rounded-2xl shadow-sm">
+                    <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-3.5 mb-4">
+                        Recent Projects
+                    </h3>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs font-medium text-slate-650">
+                            <thead>
+                                <tr className="text-slate-400 border-b border-slate-150 text-[10px] uppercase font-bold tracking-wider">
+                                    <th className="pb-3">Name</th>
+                                    <th className="pb-3">Manager</th>
+                                    <th className="pb-3">Status</th>
+                                    <th className="pb-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {safeRecentProjects.length > 0 ? (
+                                    safeRecentProjects.map((project) => (
+                                        <tr key={project.id} className="hover:bg-slate-50/50 transition group">
+                                            <td className="py-3.5 font-bold text-slate-850">{project.name}</td>
+                                            <td className="py-3.5 text-slate-500">{project.manager?.name || 'Unassigned'}</td>
+                                            <td className="py-3.5">
+                                                <span className={`inline-flex px-2 py-0.5 rounded text-[9px] font-bold capitalize ${getStatusClass(project.status)}`}>
+                                                    {project.status.replace('_', ' ')}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 text-right">
+                                                <Link 
+                                                    href={route('projects.show', project.slug)}
+                                                    className="inline-flex items-center gap-1 text-indigo-650 hover:text-indigo-500 font-bold transition text-[10px]"
+                                                >
+                                                    View Details
+                                                    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />
+                                                </Link>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan={4} className="py-6 text-center text-slate-450">
+                                            No projects available.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </AuthenticatedLayout>
     );
 }

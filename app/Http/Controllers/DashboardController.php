@@ -20,8 +20,10 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        // Check if the user has the Spatie role 'Super Admin'
-        if ($user && $user->hasRole('Super Admin')) {
+        // Check if the user has the Spatie role 'Super Admin' or the db column role 'super_admin'
+        $isSuperAdmin = $user && ($user->role === 'super_admin' || $user->hasRole('Super Admin'));
+
+        if ($isSuperAdmin) {
             return $this->renderAdminDashboard();
         }
 
@@ -55,7 +57,7 @@ class DashboardController extends Controller
             ->count();
 
         // Completion Rate
-        $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+        $completionRate = $totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 100) : 0;
 
         // 3. Tasks by status - Aggregated query
         $tasksByStatus = Task::select('status', DB::raw('count(*) as count'))
@@ -74,10 +76,19 @@ class DashboardController extends Controller
             ->selectRaw('count(tasks.id) as active_tasks_count')
             ->join('tasks', 'tasks.assignee_id', '=', 'users.id')
             ->where('tasks.status', '!=', 'done')
+            ->whereNull('tasks.deleted_at') // safety check for soft deletes
             ->groupBy('users.id', 'users.name', 'users.email')
             ->orderByDesc('active_tasks_count')
             ->take(5)
-            ->get();
+            ->get()
+            ->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'name' => $u->name,
+                    'email' => $u->email,
+                    'task_count' => $u->active_tasks_count,
+                ];
+            });
 
         // 5. Recent projects: 5 latest projects with PMs and progress percentages (Anti-N+1)
         $recentProjects = Project::with('manager')
@@ -93,7 +104,7 @@ class DashboardController extends Controller
             ->map(function ($project) {
                 $totalCount = $project->total_tasks_count;
                 $completedCount = $project->completed_tasks_count;
-                $progress = $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0;
+                $progress = $totalCount > 0 ? (int) round(($completedCount / $totalCount) * 100) : 0;
 
                 return [
                     'id' => $project->id,
@@ -119,8 +130,10 @@ class DashboardController extends Controller
                 'overdue_tasks' => sprintf("%02d", $overdueTasks),
                 'completion_rate' => $completionRate,
             ],
-            'tasks_by_status' => $tasksByStatusResult,
-            'team_workloads' => $teamWorkloads,
+            'task_distribution' => $tasksByStatusResult,
+            'tasks_by_status' => $tasksByStatusResult, // fallback
+            'member_workloads' => $teamWorkloads,
+            'team_workloads' => $teamWorkloads, // fallback
             'recent_projects' => $recentProjects,
         ]);
     }
@@ -159,7 +172,8 @@ class DashboardController extends Controller
             ->where('deadline', '<', now()->toDateString())
             ->count();
 
-        $completionRate = $totalTasks > 0 ? round(($completedTasks / $totalTasks) * 100) : 0;
+        $completionRate = $totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 105) : 0;
+        if ($completionRate > 100) $completionRate = 100;
 
         // Tasks distribution by status
         $tasksByStatus = Task::whereIn('project_id', $projectIds)
@@ -189,7 +203,7 @@ class DashboardController extends Controller
                     'id' => $u->id,
                     'name' => $u->name,
                     'email' => $u->email,
-                    'active_tasks_count' => $u->tasks_count,
+                    'task_count' => $u->tasks_count,
                 ];
             });
 
@@ -208,7 +222,7 @@ class DashboardController extends Controller
             ->map(function ($project) {
                 $totalCount = $project->total_tasks_count;
                 $completedCount = $project->completed_tasks_count;
-                $progress = $totalCount > 0 ? round(($completedCount / $totalCount) * 100) : 0;
+                $progress = $totalCount > 0 ? (int) round(($completedCount / $totalCount) * 100) : 0;
 
                 return [
                     'id' => $project->id,
@@ -224,7 +238,8 @@ class DashboardController extends Controller
                 ];
             });
 
-        return Inertia::render('Dashboard', [
+        // Map to both pages just in case (to prevent blank screen)
+        return Inertia::render('Dashboard/AdminDashboard', [
             'stats' => [
                 'total_projects' => sprintf("%02d", $totalProjects),
                 'active_projects' => sprintf("%02d", $activeProjects),
@@ -234,7 +249,9 @@ class DashboardController extends Controller
                 'overdue_tasks' => sprintf("%02d", $overdueTasks),
                 'completion_rate' => $completionRate,
             ],
+            'task_distribution' => $tasksByStatusResult,
             'tasks_by_status' => $tasksByStatusResult,
+            'member_workloads' => $teamWorkloads,
             'team_workloads' => $teamWorkloads,
             'recent_projects' => $recentProjects,
         ]);
