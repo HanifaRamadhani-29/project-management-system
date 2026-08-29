@@ -50,6 +50,18 @@ Route::middleware('auth')->group(function () {
     // Super Admin: Role & Permission Management routes
     Route::get('/roles/permissions', [RolePermissionController::class, 'index'])->name('roles.permissions.index');
     Route::post('/roles/permissions', [RolePermissionController::class, 'update'])->name('roles.permissions.update');
+
+    // Task Kanban & Reorder routes
+    if (class_exists('App\Http\Controllers\TaskController')) {
+        Route::get('/projects/{project}/kanban', [\App\Http\Controllers\TaskController::class, 'kanban'])->name('projects.kanban');
+        Route::patch('/projects/{project}/tasks/reorder', [\App\Http\Controllers\TaskController::class, 'reorder'])->name('tasks.reorder');
+    }
+
+    // Project Chat routes
+    if (class_exists('App\Http\Controllers\ProjectChatController')) {
+        Route::get('/projects/{project}/chat/messages', [\App\Http\Controllers\ProjectChatController::class, 'index'])->name('projects.chat.messages');
+        Route::post('/projects/{project}/chat/messages', [\App\Http\Controllers\ProjectChatController::class, 'store'])->name('projects.chat.store');
+    }
 });
 
 require __DIR__ . '/auth.php';

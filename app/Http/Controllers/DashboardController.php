@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Project;
-use App\Models\Task;
-use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,93 +31,112 @@ class DashboardController extends Controller
     }
 
     /**
-     * Render the Super Admin Dashboard with efficient DB aggregations.
+     * Render the Super Admin Dashboard with database table checks for cross-branch compatibility.
      *
      * @return Response
      */
     protected function renderAdminDashboard(): Response
     {
         $now = now()->toDateString();
+        
+        // Check if the database tables actually exist to prevent SQLSTATE[42S02] exceptions
+        $hasProjectTable = Schema::hasTable('projects');
+        $hasTaskTable = Schema::hasTable('tasks');
+        $hasUserTable = Schema::hasTable('users');
 
         // 1. Projects statistics
-        $totalProjects = Project::count();
-        $activeProjects = Project::where('status', 'active')->count();
-        $overdueProjects = Project::where('status', '!=', 'completed')
+        $totalProjects = $hasProjectTable ? \App\Models\Project::count() : 0;
+        $activeProjects = $hasProjectTable ? \App\Models\Project::where('status', 'active')->count() : 0;
+        $overdueProjects = $hasProjectTable ? \App\Models\Project::where('status', '!=', 'completed')
             ->whereNotNull('deadline')
             ->where('deadline', '<', $now)
-            ->count();
+            ->count() : 0;
 
         // 2. Tasks statistics
-        $totalTasks = Task::count();
-        $completedTasks = Task::where('status', 'done')->count();
-        $overdueTasks = Task::where('status', '!=', 'done')
+        $totalTasks = $hasTaskTable ? \App\Models\Task::count() : 0;
+        $completedTasks = $hasTaskTable ? \App\Models\Task::where('status', 'done')->count() : 0;
+        $overdueTasks = $hasTaskTable ? \App\Models\Task::where('status', '!=', 'done')
             ->whereNotNull('deadline')
             ->where('deadline', '<', $now)
-            ->count();
+            ->count() : 0;
 
         // Completion Rate
         $completionRate = $totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 100) : 0;
 
-        // 3. Tasks by status - Aggregated query
-        $tasksByStatus = Task::select('status', DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->pluck('count', 'status')
-            ->toArray();
-
-        $statuses = ['backlog', 'todo', 'in_progress', 'review', 'done'];
+        // 3. Tasks by status
         $tasksByStatusResult = [];
-        foreach ($statuses as $status) {
-            $tasksByStatusResult[$status] = $tasksByStatus[$status] ?? 0;
+        $statuses = ['backlog', 'todo', 'in_progress', 'review', 'done'];
+        
+        if ($hasTaskTable) {
+            $tasksByStatus = \App\Models\Task::select('status', DB::raw('count(*) as count'))
+                ->groupBy('status')
+                ->pluck('count', 'status')
+                ->toArray();
+            foreach ($statuses as $status) {
+                $tasksByStatusResult[$status] = $tasksByStatus[$status] ?? 0;
+            }
+        } else {
+            foreach ($statuses as $status) {
+                $tasksByStatusResult[$status] = 0;
+            }
         }
 
-        // 4. Team workloads: Top 5 members with active task counts
-        $teamWorkloads = User::select('users.id', 'users.name', 'users.email')
-            ->selectRaw('count(tasks.id) as active_tasks_count')
-            ->join('tasks', 'tasks.assignee_id', '=', 'users.id')
-            ->where('tasks.status', '!=', 'done')
-            ->whereNull('tasks.deleted_at') // safety check for soft deletes
-            ->groupBy('users.id', 'users.name', 'users.email')
-            ->orderByDesc('active_tasks_count')
-            ->take(5)
-            ->get()
-            ->map(function ($u) {
-                return [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                    'email' => $u->email,
-                    'task_count' => $u->active_tasks_count,
-                ];
-            });
+        // 4. Team workloads
+        $teamWorkloads = [];
+        if ($hasUserTable && $hasTaskTable) {
+            $teamWorkloads = \App\Models\User::select('users.id', 'users.name', 'users.email')
+                ->selectRaw('count(tasks.id) as active_tasks_count')
+                ->join('tasks', 'tasks.assignee_id', '=', 'users.id')
+                ->where('tasks.status', '!=', 'done')
+                ->whereNull('tasks.deleted_at')
+                ->groupBy('users.id', 'users.name', 'users.email')
+                ->orderByDesc('active_tasks_count')
+                ->take(5)
+                ->get()
+                ->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'email' => $u->email,
+                        'task_count' => $u->active_tasks_count,
+                    ];
+                })
+                ->toArray();
+        }
 
-        // 5. Recent projects: 5 latest projects with PMs and progress percentages (Anti-N+1)
-        $recentProjects = Project::with('manager')
-            ->withCount([
-                'tasks as total_tasks_count',
-                'tasks as completed_tasks_count' => function ($query) {
-                    $query->where('status', 'done');
-                }
-            ])
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(function ($project) {
-                $totalCount = $project->total_tasks_count;
-                $completedCount = $project->completed_tasks_count;
-                $progress = $totalCount > 0 ? (int) round(($completedCount / $totalCount) * 100) : 0;
+        // 5. Recent projects
+        $recentProjects = [];
+        if ($hasProjectTable) {
+            $recentProjects = \App\Models\Project::with('manager')
+                ->withCount([
+                    'tasks as total_tasks_count',
+                    'tasks as completed_tasks_count' => function ($query) {
+                        $query->where('status', 'done');
+                    }
+                ])
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(function ($project) {
+                    $totalCount = $project->total_tasks_count;
+                    $completedCount = $project->completed_tasks_count;
+                    $progress = $totalCount > 0 ? (int) round(($completedCount / $totalCount) * 100) : 0;
 
-                return [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    'slug' => $project->slug,
-                    'status' => $project->status,
-                    'deadline' => $project->deadline ? $project->deadline->format('Y-m-d') : null,
-                    'manager' => $project->manager ? [
-                        'id' => $project->manager->id,
-                        'name' => $project->manager->name,
-                    ] : null,
-                    'progress' => $progress,
-                ];
-            });
+                    return [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'slug' => $project->slug,
+                        'status' => $project->status,
+                        'deadline' => $project->deadline ? $project->deadline->format('Y-m-d') : null,
+                        'manager' => $project->manager ? [
+                            'id' => $project->manager->id,
+                            'name' => $project->manager->name,
+                        ] : null,
+                        'progress' => $progress,
+                    ];
+                })
+                ->toArray();
+        }
 
         return Inertia::render('Dashboard/AdminDashboard', [
             'stats' => [
@@ -131,9 +149,9 @@ class DashboardController extends Controller
                 'completion_rate' => $completionRate,
             ],
             'task_distribution' => $tasksByStatusResult,
-            'tasks_by_status' => $tasksByStatusResult, // fallback
+            'tasks_by_status' => $tasksByStatusResult,
             'member_workloads' => $teamWorkloads,
-            'team_workloads' => $teamWorkloads, // fallback
+            'team_workloads' => $teamWorkloads,
             'recent_projects' => $recentProjects,
         ]);
     }
@@ -145,100 +163,115 @@ class DashboardController extends Controller
      */
     protected function renderMemberDashboard(): Response
     {
-        $user = auth()->user();
+        $hasProjectTable = Schema::hasTable('projects');
+        $hasTaskTable = Schema::hasTable('tasks');
+        $hasUserTable = Schema::hasTable('users');
 
-        // Get the list of project IDs associated with the user (managed or as a member)
-        $projectIds = Project::where('manager_id', $user->id)
-            ->orWhereHas('members', function ($query) use ($user) {
-                $query->where('users.id', $user->id);
-            })
-            ->pluck('id');
-
-        // Total, Active, and Overdue Projects
-        $totalProjects = $projectIds->count();
-        $activeProjects = Project::whereIn('id', $projectIds)->where('status', 'active')->count();
-        $overdueProjects = Project::whereIn('id', $projectIds)
-            ->where('status', '!=', 'completed')
-            ->whereNotNull('deadline')
-            ->where('deadline', '<', now()->toDateString())
-            ->count();
-
-        // Tasks in these projects
-        $totalTasks = Task::whereIn('project_id', $projectIds)->count();
-        $completedTasks = Task::whereIn('project_id', $projectIds)->where('status', 'done')->count();
-        $overdueTasks = Task::whereIn('project_id', $projectIds)
-            ->where('status', '!=', 'done')
-            ->whereNotNull('deadline')
-            ->where('deadline', '<', now()->toDateString())
-            ->count();
-
-        $completionRate = $totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 105) : 0;
-        if ($completionRate > 100) $completionRate = 100;
-
-        // Tasks distribution by status
-        $tasksByStatus = Task::whereIn('project_id', $projectIds)
-            ->select('status', \DB::raw('count(*) as count'))
-            ->groupBy('status')
-            ->pluck('count', 'status')
-            ->toArray();
+        $totalProjects = 0;
+        $activeProjects = 0;
+        $overdueProjects = 0;
+        $totalTasks = 0;
+        $completedTasks = 0;
+        $overdueTasks = 0;
+        $completionRate = 0;
+        $tasksByStatusResult = [];
+        $teamWorkloads = [];
+        $recentProjects = [];
 
         $statuses = ['backlog', 'todo', 'in_progress', 'review', 'done'];
-        $tasksByStatusResult = [];
         foreach ($statuses as $status) {
-            $tasksByStatusResult[$status] = $tasksByStatus[$status] ?? 0;
+            $tasksByStatusResult[$status] = 0;
         }
 
-        // Top 5 members workload
-        $teamWorkloads = User::whereHas('projects', function ($query) use ($projectIds) {
-                $query->whereIn('projects.id', $projectIds);
-            })
-            ->withCount(['tasks' => function ($query) use ($projectIds) {
-                $query->whereIn('project_id', $projectIds)->where('status', '!=', 'done');
-            }])
-            ->orderByDesc('tasks_count')
-            ->take(5)
-            ->get(['id', 'name', 'email'])
-            ->map(function ($u) {
-                return [
-                    'id' => $u->id,
-                    'name' => $u->name,
-                    'email' => $u->email,
-                    'task_count' => $u->tasks_count,
-                ];
-            });
+        if ($hasProjectTable && $hasUserTable) {
+            $user = auth()->user();
+            $projectIds = \App\Models\Project::where('manager_id', $user->id)
+                ->orWhereHas('members', function ($query) use ($user) {
+                    $query->where('users.id', $user->id);
+                })
+                ->pluck('id');
 
-        // 5 most recent projects with PM and completion rate progress percentage
-        $recentProjects = Project::whereIn('id', $projectIds)
-            ->with('manager')
-            ->withCount([
-                'tasks as total_tasks_count',
-                'tasks as completed_tasks_count' => function ($query) {
-                    $query->where('status', 'done');
+            $totalProjects = $projectIds->count();
+            $activeProjects = \App\Models\Project::whereIn('id', $projectIds)->where('status', 'active')->count();
+            $overdueProjects = \App\Models\Project::whereIn('id', $projectIds)
+                ->where('status', '!=', 'completed')
+                ->whereNotNull('deadline')
+                ->where('deadline', '<', now()->toDateString())
+                ->count();
+
+            if ($hasTaskTable) {
+                $totalTasks = \App\Models\Task::whereIn('project_id', $projectIds)->count();
+                $completedTasks = \App\Models\Task::whereIn('project_id', $projectIds)->where('status', 'done')->count();
+                $overdueTasks = \App\Models\Task::whereIn('project_id', $projectIds)
+                    ->where('status', '!=', 'done')
+                    ->whereNotNull('deadline')
+                    ->where('deadline', '<', now()->toDateString())
+                    ->count();
+
+                $completionRate = $totalTasks > 0 ? (int) round(($completedTasks / $totalTasks) * 100) : 0;
+
+                $tasksByStatus = \App\Models\Task::whereIn('project_id', $projectIds)
+                    ->select('status', DB::raw('count(*) as count'))
+                    ->groupBy('status')
+                    ->pluck('count', 'status')
+                    ->toArray();
+
+                foreach ($statuses as $status) {
+                    $tasksByStatusResult[$status] = $tasksByStatus[$status] ?? 0;
                 }
-            ])
-            ->latest()
-            ->take(5)
-            ->get()
-            ->map(function ($project) {
-                $totalCount = $project->total_tasks_count;
-                $completedCount = $project->completed_tasks_count;
-                $progress = $totalCount > 0 ? (int) round(($completedCount / $totalCount) * 100) : 0;
 
-                return [
-                    'id' => $project->id,
-                    'name' => $project->name,
-                    'slug' => $project->slug,
-                    'status' => $project->status,
-                    'deadline' => $project->deadline ? $project->deadline->format('Y-m-d') : null,
-                    'manager' => $project->manager ? [
-                        'id' => $project->manager->id,
-                        'name' => $project->manager->name,
-                    ] : null,
-                    'progress' => $progress,
-                ];
-            });
+                $teamWorkloads = \App\Models\User::whereHas('projects', function ($query) use ($projectIds) {
+                        $query->whereIn('projects.id', $projectIds);
+                    })
+                    ->withCount(['tasks' => function ($query) use ($projectIds) {
+                        $query->whereIn('project_id', $projectIds)->where('status', '!=', 'done');
+                    }])
+                    ->orderByDesc('tasks_count')
+                    ->take(5)
+                    ->get(['id', 'name', 'email'])
+                    ->map(function ($u) {
+                        return [
+                            'id' => $u->id,
+                            'name' => $u->name,
+                            'email' => $u->email,
+                            'task_count' => $u->tasks_count,
+                        ];
+                    })
+                    ->toArray();
+            }
 
-        // Map to both pages just in case (to prevent blank screen)
+            $recentProjects = \App\Models\Project::whereIn('id', $projectIds)
+                ->with('manager')
+                ->withCount([
+                    'tasks as total_tasks_count',
+                    'tasks as completed_tasks_count' => function ($query) {
+                        $query->where('status', 'done');
+                    }
+                ])
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(function ($project) {
+                    $totalCount = $project->total_tasks_count;
+                    $completedCount = $project->completed_tasks_count;
+                    $progress = $totalCount > 0 ? (int) round(($completedCount / $totalCount) * 100) : 0;
+
+                    return [
+                        'id' => $project->id,
+                        'name' => $project->name,
+                        'slug' => $project->slug,
+                        'status' => $project->status,
+                        'deadline' => $project->deadline ? $project->deadline->format('Y-m-d') : null,
+                        'manager' => $project->manager ? [
+                            'id' => $project->manager->id,
+                            'name' => $project->manager->name,
+                        ] : null,
+                        'progress' => $progress,
+                    ];
+                })
+                ->toArray();
+        }
+
         return Inertia::render('Dashboard/AdminDashboard', [
             'stats' => [
                 'total_projects' => sprintf("%02d", $totalProjects),

@@ -1,12 +1,15 @@
-import { useState, PropsWithChildren, ReactNode } from "react";
+import React, { useState, PropsWithChildren, ReactNode } from "react";
 import { Link, usePage } from "@inertiajs/react";
 import { 
     LayoutDashboard, 
-    Folder, 
-    Kanban, 
+    FolderKanban, 
     CheckSquare, 
+    CheckCircle2, 
+    Bell, 
     Users, 
-    ScrollText, 
+    ShieldCheck, 
+    History, 
+    BarChart3, 
     Menu, 
     X, 
     ChevronDown, 
@@ -23,21 +26,132 @@ export default function Authenticated({
     const [showingUserDropdown, setShowingUserDropdown] = useState(false);
 
     const isSuperAdmin = user?.role === 'super_admin' || (user?.roles && user.roles.includes("Super Admin"));
+    const isPM = user?.role === 'project_manager' || (user?.roles && user.roles.includes("Project Manager"));
 
-    const menuItems = [
-        { name: "Dashboard", href: route("dashboard"), icon: LayoutDashboard, active: route().current("dashboard") },
-        { name: "Projects", href: route("projects.index"), icon: Folder, active: route().current("projects.*") && !route().current("projects.kanban") },
-        { name: "Kanban Board", href: route("projects.index"), icon: Kanban, active: route().current("projects.kanban") },
-        { name: "My Tasks", href: "#", icon: CheckSquare, active: false },
+    // Main section menu items
+    const mainSection = [
+        { name: "Dashboard", href: route().has("dashboard") ? route("dashboard") : "/dashboard", icon: LayoutDashboard, active: route().current("dashboard") },
+        { name: "Projects", href: route().has("projects.index") ? route("projects.index") : "/projects", icon: FolderKanban, active: route().current("projects.*") && !route().current("projects.kanban") },
+        { name: "My Tasks", href: "/tasks", icon: CheckSquare, active: false },
     ];
 
+    // Workflow section menu items
+    const workflowSection = [
+        { name: "Approvals", href: "/approvals", icon: CheckCircle2, active: false },
+        { name: "Notifications", href: "/notifications", icon: Bell, active: false },
+    ];
+
+    // Administration section menu items
+    const adminSection: { name: string; href: string; icon: any; active: boolean }[] = [];
     if (isSuperAdmin) {
-        menuItems.push({ name: "Users", href: route("users.index"), icon: Users, active: route().current("users.*") });
-        menuItems.push({ name: "Roles & Permissions", href: route("roles.permissions.index"), icon: CheckSquare, active: route().current("roles.permissions.*") });
-        menuItems.push({ name: "Audit Logs", href: "#", icon: ScrollText, active: false });
-    } else {
-        menuItems.push({ name: "Team Members", href: "#", icon: Users, active: false });
+        adminSection.push({ name: "Users", href: route().has("users.index") ? route("users.index") : "/users", icon: Users, active: route().current("users.*") });
+        adminSection.push({ name: "Roles & Permissions", href: route().has("roles.permissions.index") ? route("roles.permissions.index") : "/roles/permissions", icon: ShieldCheck, active: route().current("roles.permissions.*") });
+        adminSection.push({ name: "Audit Logs", href: "/audit-logs", icon: History, active: false });
     }
+
+    if (isSuperAdmin || isPM) {
+        adminSection.push({ name: "Reports", href: "/reports", icon: BarChart3, active: false });
+    }
+
+    // Dynamic role badges
+    const getRoleDetails = () => {
+        if (isSuperAdmin) {
+            return { label: "Super Admin", style: "bg-purple-50 text-purple-700 border-purple-100" };
+        }
+        if (isPM) {
+            return { label: "Project Manager", style: "bg-blue-50 text-blue-700 border-blue-100" };
+        }
+        if (user?.role === 'member' || (user?.roles && user.roles.includes("Member"))) {
+            return { label: "Member", style: "bg-emerald-50 text-emerald-700 border-emerald-100" };
+        }
+        return { label: "Viewer", style: "bg-slate-100 text-slate-700 border-slate-200" };
+    };
+
+    const roleDetails = getRoleDetails();
+
+    const renderNavLinks = () => (
+        <div className="space-y-6">
+            {/* Section: Menu Utama */}
+            <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                    Menu Utama
+                </div>
+                <div className="space-y-1">
+                    {mainSection.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition duration-150 ${
+                                    item.active
+                                        ? "bg-indigo-50 text-indigo-600 font-semibold"
+                                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                }`}
+                            >
+                                <Icon className="w-4.5 h-4.5" />
+                                {item.name}
+                            </Link>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Section: Workflow & Kolaborasi */}
+            <div>
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                    Workflow & Kolaborasi
+                </div>
+                <div className="space-y-1">
+                    {workflowSection.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition duration-150 ${
+                                    item.active
+                                        ? "bg-indigo-50 text-indigo-600 font-semibold"
+                                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                }`}
+                            >
+                                <Icon className="w-4.5 h-4.5" />
+                                {item.name}
+                            </Link>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Section: Administrasi */}
+            {adminSection.length > 0 && (
+                <div>
+                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">
+                        Administrasi
+                    </div>
+                    <div className="space-y-1">
+                        {adminSection.map((item) => {
+                            const Icon = item.icon;
+                            return (
+                                <Link
+                                    key={item.name}
+                                    href={item.href}
+                                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition duration-150 ${
+                                        item.active
+                                            ? "bg-indigo-50 text-indigo-600 font-semibold"
+                                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                    }`}
+                                >
+                                    <Icon className="w-4.5 h-4.5" />
+                                    {item.name}
+                                </Link>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-slate-50 flex">
@@ -48,41 +162,37 @@ export default function Authenticated({
                     <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center font-black text-white text-sm shadow-sm">
                         P
                     </div>
-                    <span className="font-extrabold text-sm text-slate-800 tracking-tight">
+                    <span className="font-extrabold text-sm text-slate-900 tracking-tight">
                         ProManage Enterprise
                     </span>
                 </div>
 
                 {/* Sidebar Navigation Links */}
-                <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-                    {menuItems.map((item) => {
-                        const Icon = item.icon;
-                        return (
-                            <Link
-                                key={item.name}
-                                href={item.href}
-                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition duration-150 ${
-                                    item.active
-                                        ? "bg-indigo-50 text-indigo-655 font-bold"
-                                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-                                }`}
-                            >
-                                <Icon className="w-4.5 h-4.5" />
-                                {item.name}
-                            </Link>
-                        );
-                    })}
+                <nav className="flex-1 p-4 overflow-y-auto">
+                    {renderNavLinks()}
                 </nav>
 
-                {/* Quick Logout at bottom of sidebar */}
-                <div className="p-4 border-t border-slate-200">
+                {/* User Profile Card & Quick Logout */}
+                <div className="p-4 border-t border-slate-200 space-y-3.5 bg-slate-50/50">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white uppercase shadow-sm">
+                            {user?.name ? user.name.substring(0, 2).toUpperCase() : 'US'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <div className="text-xs font-bold text-slate-900 truncate">{user?.name || 'User'}</div>
+                            <span className={`inline-block px-2 py-0.5 mt-1 rounded text-[9px] font-bold border capitalize ${roleDetails.style}`}>
+                                {roleDetails.label}
+                            </span>
+                        </div>
+                    </div>
+                    
                     <Link
                         method="post"
                         href={route('logout')}
                         as="button"
-                        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-600 hover:bg-rose-50 transition duration-150"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-100 bg-white transition duration-150 shadow-sm"
                     >
-                        <LogOut className="w-4.5 h-4.5 text-rose-500" />
+                        <LogOut className="w-4 h-4 text-rose-500" />
                         Log Out
                     </Link>
                 </div>
@@ -99,34 +209,17 @@ export default function Authenticated({
                             <X className="w-5 h-5" />
                         </button>
 
-                        <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-100 mt-2">
+                        <div className="flex items-center gap-3 pb-6 mb-6 border-b border-slate-150 mt-2">
                             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-cyan-500 flex items-center justify-center font-black text-white text-sm shadow-sm">
                                 P
                             </div>
-                            <span className="font-extrabold text-sm text-slate-800">
+                            <span className="font-extrabold text-sm text-slate-900">
                                 ProManage
                             </span>
                         </div>
 
-                        <nav className="flex-1 space-y-1.5 overflow-y-auto">
-                            {menuItems.map((item) => {
-                                const Icon = item.icon;
-                                return (
-                                    <Link
-                                        key={item.name}
-                                        href={item.href}
-                                        onClick={() => setIsSidebarOpen(false)}
-                                        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition duration-150 ${
-                                            item.active
-                                                ? "bg-indigo-50 text-indigo-650 font-bold"
-                                                : "text-slate-650 hover:bg-slate-50 hover:text-slate-900"
-                                        }`}
-                                    >
-                                        <Icon className="w-4.5 h-4.5" />
-                                        {item.name}
-                                    </Link>
-                                );
-                            })}
+                        <nav className="flex-1 overflow-y-auto">
+                            {renderNavLinks()}
                         </nav>
                     </div>
                 </div>
@@ -153,7 +246,7 @@ export default function Authenticated({
                             onClick={() => setShowingUserDropdown(!showingUserDropdown)}
                             className="relative z-50 flex items-center gap-2 pl-3 py-1.5 pr-2.5 hover:bg-slate-50 rounded-xl transition text-slate-700"
                         >
-                            <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-xs font-bold text-white uppercase shadow-sm">
+                            <div className="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white uppercase shadow-sm">
                                 {user?.name ? user.name.substring(0, 2).toUpperCase() : 'US'}
                             </div>
                             <span className="hidden sm:inline text-sm font-semibold">{user?.name || 'User'}</span>
@@ -169,7 +262,7 @@ export default function Authenticated({
                         )}
 
                         {showingUserDropdown && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-150 rounded-2xl shadow-xl py-2 z-50 text-xs font-medium text-slate-655">
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-150 rounded-2xl shadow-xl py-2 z-50 text-xs font-medium text-slate-650">
                                 <Link
                                     href={route("profile.edit")}
                                     onClick={() => setShowingUserDropdown(false)}
@@ -185,7 +278,7 @@ export default function Authenticated({
                                     onClick={() => setShowingUserDropdown(false)}
                                     className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2 transition"
                                 >
-                                    <LogOut className="w-4 h-4 text-rose-550" />
+                                    <LogOut className="w-4 h-4 text-rose-500" />
                                     Log Out
                                 </Link>
                             </div>
