@@ -6,6 +6,7 @@ export interface User {
     role?: string;
     roles: string[];
     permissions: string[];
+    role?: 'super_admin' | 'project_manager' | 'member' | 'viewer';
 }
 
 export type PageProps<

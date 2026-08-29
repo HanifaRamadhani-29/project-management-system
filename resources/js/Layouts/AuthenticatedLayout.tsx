@@ -29,11 +29,14 @@ export default function Authenticated({
         { name: "Projects", href: route("projects.index"), icon: Folder, active: route().current("projects.*") && !route().current("projects.kanban") },
         { name: "Kanban Board", href: route("projects.index"), icon: Kanban, active: route().current("projects.kanban") },
         { name: "My Tasks", href: "#", icon: CheckSquare, active: false },
-        { name: "Team Members", href: "#", icon: Users, active: false },
     ];
 
     if (isSuperAdmin) {
+        menuItems.push({ name: "Users", href: route("users.index"), icon: Users, active: route().current("users.*") });
+        menuItems.push({ name: "Roles & Permissions", href: route("roles.permissions.index"), icon: CheckSquare, active: route().current("roles.permissions.*") });
         menuItems.push({ name: "Audit Logs", href: "#", icon: ScrollText, active: false });
+    } else {
+        menuItems.push({ name: "Team Members", href: "#", icon: Users, active: false });
     }
 
     return (
@@ -116,7 +119,7 @@ export default function Authenticated({
                                         className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition duration-150 ${
                                             item.active
                                                 ? "bg-indigo-50 text-indigo-650 font-bold"
-                                                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                                                : "text-slate-650 hover:bg-slate-50 hover:text-slate-900"
                                         }`}
                                     >
                                         <Icon className="w-4.5 h-4.5" />

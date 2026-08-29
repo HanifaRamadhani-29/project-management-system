@@ -12,10 +12,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Run Spatie RoleSeeder first
-        $this->call(RoleSeeder::class);
+        // 1. Run Permission Seeder to initialize Spatie roles and permissions
+        $this->call(PermissionSeeder::class);
 
-        // Create Super Admin User
+        // 2. Seed Default User Accounts
         $admin = User::create([
             'name' => 'Super Admin',
             'email' => 'admin@example.com',
@@ -24,7 +24,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $admin->assignRole('Super Admin');
 
-        // Create Project Manager User
         $pm = User::create([
             'name' => 'Project Manager',
             'email' => 'pm@example.com',
@@ -33,7 +32,6 @@ class DatabaseSeeder extends Seeder
         ]);
         $pm->assignRole('Project Manager');
 
-        // Create Member User
         $member = User::create([
             'name' => 'Team Member',
             'email' => 'member@example.com',
@@ -41,5 +39,13 @@ class DatabaseSeeder extends Seeder
             'role' => 'member',
         ]);
         $member->assignRole('Member');
+
+        $viewer = User::create([
+            'name' => 'Viewer User',
+            'email' => 'viewer@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'viewer',
+        ]);
+        $viewer->assignRole('Viewer');
     }
 }

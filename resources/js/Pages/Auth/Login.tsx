@@ -15,7 +15,7 @@ export default function Login({
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
-        remember: false as boolean,
+        remember: false,
     });
 
     const submit: FormEventHandler = (e) => {
@@ -31,11 +31,11 @@ export default function Login({
             <Head title="Log in" />
 
             <div className="mb-6 text-center">
-                <h2 className="text-xl font-bold text-slate-850 tracking-tight">
-                    Sign In
+                <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+                    Welcome Back
                 </h2>
                 <p className="text-xs text-slate-500 mt-1.5 font-medium">
-                    Please enter your credentials to login.
+                    Please sign in to access your enterprise dashboard.
                 </p>
             </div>
 
@@ -61,7 +61,7 @@ export default function Login({
                             name="email"
                             value={data.email}
                             className="block w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-xl text-sm font-medium transition duration-150"
-                            placeholder="name@company.com"
+                            placeholder="Masukkan email Anda"
                             autoComplete="username"
                             onChange={(e) => setData('email', e.target.value)}
                             required
@@ -80,7 +80,7 @@ export default function Login({
                         {canResetPassword && (
                             <Link
                                 href={route('password.request')}
-                                className="text-xs text-indigo-655 hover:text-indigo-700 font-medium transition"
+                                className="text-xs text-indigo-650 hover:text-indigo-755 font-medium transition"
                             >
                                 Forgot?
                             </Link>
@@ -130,16 +130,6 @@ export default function Login({
                         Sign In
                         <ArrowRight className="w-4 h-4" />
                     </button>
-
-                    <p className="text-center text-xs text-slate-500 font-semibold">
-                        Don't have an account?{" "}
-                        <Link
-                            href={route('register')}
-                            className="text-indigo-655 hover:text-indigo-700 font-medium transition"
-                        >
-                            Sign up
-                        </Link>
-                    </p>
                 </div>
             </form>
         </GuestLayout>
