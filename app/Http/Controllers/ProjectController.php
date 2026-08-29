@@ -9,6 +9,8 @@ use App\Http\Requests\StoreProjectRequest;
 use App\Http\Requests\StoreMemberRequest;
 use App\Http\Requests\UpdateProjectRequest;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ProjectController extends Controller
 {
@@ -24,13 +26,34 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Project::class);
-        $projects = $this->projectService->getAllProjects(auth()->user());
-        
-        return inertia('Projects/Index', [
-            'projects' => $projects
+
+        $user = $request->user();
+        $query = Project::with(['manager', 'members']);
+
+        if (class_exists('App\Models\Task')) {
+            $query->withCount(['tasks', 'tasks as completed_tasks_count' => function ($q) {
+                $q->where('status', 'done');
+            }]);
+        }
+
+        // Jika bukan Super Admin, filter hanya project yang di-assign ke user ini
+        if ($user->role !== 'super_admin') {
+            $query->where(function ($q) use ($user) {
+                $q->where('manager_id', $user->id)
+                  ->orWhereHas('members', function ($m) use ($user) {
+                      $m->where('users.id', $user->id);
+                  });
+            });
+        }
+
+        $projects = $query->latest()->paginate(9);
+
+        return Inertia::render('Projects/Index', [
+            'projects' => $projects,
+            'filters' => $request->only(['search', 'status']),
         ]);
     }
 
@@ -61,7 +84,11 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $project->load(['members', 'tasks']);
+        $relations = ['members'];
+        if (class_exists('App\Models\Task')) {
+            $relations[] = 'tasks';
+        }
+        $project->load($relations);
         $users = User::all();
 
         return inertia('Projects/Show', [

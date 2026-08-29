@@ -26,7 +26,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
-        Project::observe(ProjectObserver::class);
-        Task::observe(TaskObserver::class);
+        if (class_exists('App\Models\Project') && class_exists('App\Observers\ProjectObserver')) {
+            \App\Models\Project::observe(\App\Observers\ProjectObserver::class);
+        }
+
+        if (class_exists('App\Models\Task') && class_exists('App\Observers\TaskObserver')) {
+            \App\Models\Task::observe(\App\Observers\TaskObserver::class);
+        }
     }
 }
