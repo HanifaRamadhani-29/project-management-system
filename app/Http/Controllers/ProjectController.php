@@ -15,6 +15,7 @@ use Inertia\Inertia;
 class ProjectController extends Controller
 {
     use AuthorizesRequests;
+<<<<<<< HEAD
 
     protected $projectService;
 
@@ -39,6 +40,59 @@ class ProjectController extends Controller
             'projects' => $projects,
             'filters'  => $request->only(['search', 'status']),
             'users'    => User::select('id', 'name', 'email', 'role')->get(),
+=======
+
+    protected $projectService;
+
+    public function __construct(ProjectService $projectService)
+    {
+        $this->projectService = $projectService;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+<<<<<<< HEAD
+    public function index(\Illuminate\Http\Request $request)
+    {
+        $this->authorize('viewAny', Project::class);
+        $filters = $request->only(['search', 'status']);
+        $projects = $this->projectService->getAllProjects(auth()->user(), $filters);
+        
+        return inertia('Projects/Index', [
+            'projects' => $projects,
+            'filters' => $filters
+=======
+    public function index(Request $request)
+    {
+        $this->authorize('viewAny', Project::class);
+
+        $user = $request->user();
+        $query = Project::with(['manager', 'members']);
+
+        if (class_exists('App\Models\Task')) {
+            $query->withCount(['tasks', 'tasks as completed_tasks_count' => function ($q) {
+                $q->where('status', 'done');
+            }]);
+        }
+
+        // Jika bukan Super Admin, filter hanya project yang di-assign ke user ini
+        if ($user->role !== 'super_admin') {
+            $query->where(function ($q) use ($user) {
+                $q->where('manager_id', $user->id)
+                  ->orWhereHas('members', function ($m) use ($user) {
+                      $m->where('users.id', $user->id);
+                  });
+            });
+        }
+
+        $projects = $query->latest()->paginate(9);
+
+        return Inertia::render('Projects/Index', [
+            'projects' => $projects,
+            'filters' => $request->only(['search', 'status']),
+>>>>>>> feature/project
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         ]);
     }
 
@@ -58,10 +112,13 @@ class ProjectController extends Controller
      */
     public function store(StoreProjectRequest $request)
     {
+<<<<<<< HEAD
         if (auth()->user()->role === 'member' || auth()->user()->role === 'viewer') {
             abort(403, 'Unauthorized action. Members cannot create projects.');
         }
 
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $this->authorize('create', Project::class);
         $project = $this->projectService->createProject($request->validated(), auth()->user());
         
@@ -75,11 +132,21 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        $project->load(['members', 'tasks', 'manager']);
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $relations = ['members'];
         if (class_exists('App\Models\Task')) {
             $relations[] = 'tasks';
         }
         $project->load($relations);
+<<<<<<< HEAD
+=======
+>>>>>>> feature/project
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $users = User::all();
 
         // Task counts for Task Overview

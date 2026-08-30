@@ -5,8 +5,9 @@ namespace Tests\Feature;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-use Spatie\Permission\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Inertia\Testing\AssertableInertia;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class ProjectManagementTest extends TestCase
@@ -24,6 +25,31 @@ class ProjectManagementTest extends TestCase
     /**
      * Test Super Admin can manage any project.
      */
+    public function test_project_manager_can_access_user_list_for_selection(): void
+    {
+        $pm = User::factory()->create([
+            'name' => 'PM User',
+            'email' => 'pm-user@example.com',
+            'role' => 'project_manager',
+        ]);
+        $pm->assignRole('Project Manager');
+
+        $member = User::factory()->create([
+            'name' => 'Member User',
+            'email' => 'member-user@example.com',
+            'role' => 'member',
+        ]);
+        $member->assignRole('Member');
+
+        $response = $this->actingAs($pm)->get(route('users.index'));
+
+        $response->assertOk();
+        $response->assertInertia(fn (AssertableInertia $page) => $page
+            ->component('Users/Index')
+            ->has('users.data', 2)
+        );
+    }
+
     public function test_super_admin_can_manage_any_project(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin']);
@@ -115,8 +141,10 @@ class ProjectManagementTest extends TestCase
 
         // Add member
         $response = $this->actingAs($pm)
+            ->from(route('projects.index'))
             ->post(route('projects.members.add', $project->slug), [
                 'user_id' => $member->id,
+                'role' => 'member',
             ]);
         
         $response->assertRedirect(route('projects.index'));
@@ -124,6 +152,7 @@ class ProjectManagementTest extends TestCase
 
         // Remove member
         $response = $this->actingAs($pm)
+            ->from(route('projects.index'))
             ->delete(route('projects.members.remove', [$project->slug, $member->id]));
 
         $response->assertRedirect(route('projects.index'));

@@ -18,8 +18,32 @@ class UserController extends Controller
     protected function authorizeSuperAdmin(): void
     {
         $user = auth()->user();
-        if (!$user || !($user->role === 'super_admin' || $user->hasRole('Super Admin'))) {
+        if (!$user) {
+            abort(403, 'Unauthenticated.');
+        }
+
+        $isSuperAdmin = $user->role === 'super_admin' 
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (method_exists($user, 'hasRole') && ($user->hasRole('super_admin') || $user->hasRole('Super Admin')));
+
+        if (!$isSuperAdmin) {
             abort(403, 'Unauthorized action. Only Super Admins can access this resource.');
+        }
+    }
+
+    protected function authorizeUserList(): void
+    {
+        $user = auth()->user();
+        if (!$user) {
+            abort(403, 'Unauthenticated.');
+        }
+
+        $allowedRoles = ['super_admin', 'Super Admin', 'project_manager', 'Project Manager'];
+        $hasAccess = in_array($user->role, $allowedRoles) 
+             || (method_exists($user, 'hasAnyRole') && $user->hasAnyRole($allowedRoles));
+
+        if (!$hasAccess) {
+            abort(403, 'Unauthorized action. Only Super Admins and Project Managers can access user list.');
         }
     }
 
@@ -28,7 +52,7 @@ class UserController extends Controller
      */
     public function index(Request $request): Response
     {
-        $this->authorizeSuperAdmin();
+        $this->authorizeUserList();
 
         $query = User::query();
 
@@ -37,7 +61,7 @@ class UserController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
@@ -65,6 +89,7 @@ class UserController extends Controller
 
         $user = User::create([
             'name' => $validated['name'],
+            'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'role' => $validated['role'],
@@ -95,6 +120,7 @@ class UserController extends Controller
 
         $user->update([
             'name' => $validated['name'],
+            'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'],
         ]);

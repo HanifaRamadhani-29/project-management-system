@@ -131,7 +131,7 @@ export default function AdminDashboard({
                             <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
                                 Active Projects
                             </span>
-                            <span className="text-3xl font-black text-indigo-650 block">
+                            <span className="text-3xl font-black text-indigo-600 block">
                                 {safeStats.active_projects ?? "0"}
                             </span>
                         </div>
@@ -161,7 +161,7 @@ export default function AdminDashboard({
                             <span className="text-[10px] font-bold text-slate-400 tracking-wider uppercase block">
                                 Task Completion Rate
                             </span>
-                            <span className="text-lg font-black text-indigo-650">
+                            <span className="text-lg font-black text-indigo-600">
                                 {safeStats.completion_rate ?? 0}%
                             </span>
                         </div>
@@ -194,7 +194,7 @@ export default function AdminDashboard({
                         </div>
                         <div>
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Completed Tasks</span>
-                            <span className="text-xl font-extrabold text-emerald-650">{safeStats.completed_tasks ?? "0"}</span>
+                            <span className="text-xl font-extrabold text-emerald-600">{safeStats.completed_tasks ?? "0"}</span>
                         </div>
                     </div>
 
@@ -308,7 +308,7 @@ export default function AdminDashboard({
                                             <td className="py-3.5 text-right">
                                                 <Link 
                                                     href={route('projects.show', project.slug)}
-                                                    className="inline-flex items-center gap-1 text-indigo-650 hover:text-indigo-500 font-bold transition text-[10px]"
+                                                    className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-500 font-bold transition text-[10px]"
                                                 >
                                                     View Details
                                                     <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition" />

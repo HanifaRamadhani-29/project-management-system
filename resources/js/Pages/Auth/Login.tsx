@@ -2,8 +2,8 @@ import InputError from '@/Components/InputError';
 import Checkbox from '@/Components/Checkbox';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
-import { Mail, Lock, ArrowRight } from 'lucide-react';
+import React, { FormEventHandler } from 'react';
+import { Mail, Lock, LogIn } from 'lucide-react';
 
 export default function Login({
     status,
@@ -61,7 +61,7 @@ export default function Login({
                             name="email"
                             value={data.email}
                             className="block w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-xl text-sm font-medium transition duration-150"
-                            placeholder="Masukkan email Anda"
+                            placeholder=""
                             autoComplete="username"
                             onChange={(e) => setData('email', e.target.value)}
                             required
@@ -80,7 +80,7 @@ export default function Login({
                         {canResetPassword && (
                             <Link
                                 href={route('password.request')}
-                                className="text-xs text-indigo-650 hover:text-indigo-755 font-medium transition"
+                                className="text-xs text-indigo-600 hover:text-indigo-700 font-medium transition"
                             >
                                 Forgot?
                             </Link>
@@ -96,7 +96,7 @@ export default function Login({
                             name="password"
                             value={data.password}
                             className="block w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-xl text-sm font-medium transition duration-150"
-                            placeholder="••••••••"
+                            placeholder=""
                             autoComplete="current-password"
                             onChange={(e) => setData('password', e.target.value)}
                             required
@@ -121,14 +121,14 @@ export default function Login({
                 </div>
 
                 {/* Submit Action */}
-                <div className="pt-2 flex flex-col gap-3">
+                <div className="pt-2">
                     <button
                         type="submit"
                         disabled={processing}
                         className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl text-sm font-medium transition duration-200 shadow-md shadow-indigo-600/20"
                     >
                         Sign In
-                        <ArrowRight className="w-4 h-4" />
+                        <LogIn className="w-4 h-4" />
                     </button>
                 </div>
             </form>

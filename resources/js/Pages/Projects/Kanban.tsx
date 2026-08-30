@@ -9,6 +9,8 @@ import {
     DropResult,
 } from "@hello-pangea/dnd";
 import axios from "axios";
+import TaskModal from "./TaskModal";
+import TaskDetailPanel from "./TaskDetailPanel";
 import {
     AlertCircle,
     Calendar,
@@ -43,6 +45,9 @@ const columnTitles: Record<ColumnId, string> = {
 interface KanbanProps {
     project: Project;
     tasks: Task[];
+    users?: any[];
+    allLabels?: any[];
+    allProjectTasks?: any[];
 }
 
 interface ColumnsState {
@@ -53,7 +58,11 @@ interface ColumnsState {
     done: Task[];
 }
 
-export default function Kanban({ project, tasks }: KanbanProps) {
+export default function Kanban({ project, tasks, users = [], allLabels = [], allProjectTasks = [] }: KanbanProps) {
+    const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+    const modalUsers = users.length > 0 ? users : (project.members ?? []);
+    const safeUsers = modalUsers.length > 0 ? modalUsers : (Array.isArray((usePage() as any).props.users) ? (usePage() as any).props.users : []);
+
     // Group and sort initial tasks by status and their order
     const getInitialColumns = (taskList: Task[]): ColumnsState => {
         return {
@@ -79,14 +88,90 @@ export default function Kanban({ project, tasks }: KanbanProps) {
         getInitialColumns(tasks)
     );
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+    useEffect(() => {
+        setColumns(getInitialColumns(tasks));
+
+        if (selectedTask) {
+            let found: Task | undefined;
+            // Search in parent tasks first
+            found = tasks.find((t) => t.id === selectedTask.id);
+            // Search in subtasks of parent tasks if not found
+            if (!found) {
+                for (const parent of tasks) {
+                    if (parent.subtasks) {
+                        found = parent.subtasks.find((t) => t.id === selectedTask.id);
+                        if (found) break;
+                    }
+                }
+            }
+
+            if (found) {
+                setSelectedTask(found);
+            } else {
+                setSelectedTask(null);
+            }
+        }
+    }, [tasks]);
 
     // Chat room state
     const currentUser = usePage().props.auth.user;
+    const { auth } = usePage().props as any;
+    const hasPermission = (perm: string) => 
+        currentUser?.role === 'super_admin' || auth?.user?.permissions?.includes(perm);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [isSendingMessage, setIsSendingMessage] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const chatInputRef = useRef<HTMLInputElement>(null);
+
+    const [isMentioning, setIsMentioning] = useState(false);
+    const [mentionQuery, setMentionQuery] = useState('');
+
+    const handleChatChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setNewMessage(value);
+
+        const cursorPosition = e.target.selectionStart || 0;
+        const textBeforeCursor = value.substring(0, cursorPosition);
+        const match = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+        
+        if (match) {
+            setIsMentioning(true);
+            setMentionQuery(match[1]);
+        } else {
+            setIsMentioning(false);
+        }
+    };
+
+    const insertChatMention = (username: string) => {
+        const currentText = newMessage;
+        const cursorPosition = chatInputRef.current?.selectionStart || 0;
+        const textBeforeCursor = currentText.substring(0, cursorPosition);
+        const textAfterCursor = currentText.substring(cursorPosition);
+        
+        const match = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+        if (match) {
+            const prefixIndex = match.index! + match[0].lastIndexOf('@');
+            const prefix = textBeforeCursor.substring(0, prefixIndex);
+            const newText = prefix + `@${username} ` + textAfterCursor;
+            setNewMessage(newText);
+        }
+        setIsMentioning(false);
+        setTimeout(() => chatInputRef.current?.focus(), 10);
+    };
+
+    const renderChatMessage = (content: string, isMe: boolean) => {
+        const parts = content.split(/(@\w+)/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('@')) {
+                return <span key={i} className={`font-bold px-1 rounded-sm ${isMe ? 'bg-emerald-600/50 text-white' : 'text-indigo-600 bg-indigo-50'}`}>{part}</span>;
+            }
+            return <span key={i}>{part}</span>;
+        });
+    };
 
     // Fetch and poll messages
     useEffect(() => {
@@ -129,6 +214,7 @@ export default function Kanban({ project, tasks }: KanbanProps) {
             if (response.data.success) {
                 setChatMessages((prev) => [...prev, response.data.message]);
                 setNewMessage("");
+                setIsMentioning(false);
             }
         } catch (err) {
             console.error("Failed to send message:", err);
@@ -263,6 +349,15 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                     </div>
 
                     <div className="flex items-center gap-3">
+                        {hasPermission('tasks.create') && (
+                            <button
+                                onClick={() => setIsCreateTaskOpen(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-indigo-500 transition"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Task
+                            </button>
+                        )}
                         <button
                             onClick={() => setIsChatOpen(!isChatOpen)}
                             className={`flex items-center gap-1.5 px-4 py-2 border rounded-xl text-sm font-semibold transition ${
@@ -310,7 +405,7 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                                 </span>
                                 <p className="text-sm text-slate-700 font-semibold flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-slate-400" />
-                                    {project.start_date || "N/A"} to {project.deadline || "N/A"}
+                                    {project.start_date ? new Date(project.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"} to {project.deadline ? new Date(project.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
                                 </p>
                             </div>
                         </div>
@@ -372,22 +467,38 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                                                                         ref={provided.innerRef}
                                                                         {...provided.draggableProps}
                                                                         {...provided.dragHandleProps}
-                                                                        className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition duration-150 flex flex-col gap-3 group"
+                                                                        onClick={() => setSelectedTask(task)}
+                                                                        className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition duration-150 flex flex-col gap-3 group cursor-pointer"
                                                                     >
                                                                         {/* Card Label/Priority */}
-                                                                        <div className="flex items-center justify-between">
-                                                                            <span
-                                                                                className={`inline-flex px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${getPriorityBadgeClass(
-                                                                                    task.priority
-                                                                                )}`}
-                                                                            >
-                                                                                {formatPriority(
-                                                                                    task.priority
-                                                                                )}
-                                                                            </span>
-                                                                            <span className="text-[10px] text-slate-350 font-bold group-hover:text-slate-500 transition">
-                                                                                #{task.id}
-                                                                            </span>
+                                                                        <div className="flex flex-col gap-2">
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span
+                                                                                    className={`inline-flex px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${getPriorityBadgeClass(
+                                                                                        task.priority
+                                                                                    )}`}
+                                                                                >
+                                                                                    {formatPriority(
+                                                                                        task.priority
+                                                                                    )}
+                                                                                </span>
+                                                                                <span className="text-[10px] text-slate-350 font-bold group-hover:text-slate-500 transition">
+                                                                                    #{task.id}
+                                                                                </span>
+                                                                            </div>
+                                                                            {task.labels && task.labels.length > 0 && (
+                                                                                <div className="flex flex-wrap gap-1">
+                                                                                    {task.labels.map(label => (
+                                                                                        <span 
+                                                                                            key={label.id}
+                                                                                            className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                                                                                            style={{ backgroundColor: label.color }}
+                                                                                        >
+                                                                                            {label.name}
+                                                                                        </span>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
 
                                                                         {/* Card Title & Desc */}
@@ -497,13 +608,13 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                                                     {msg.user?.name || "Unknown"}
                                                 </span>
                                                 <div
-                                                    className={`px-3 py-2 rounded-2xl max-w-[90%] break-words font-medium ${
+                                                    className={`px-3 py-2 rounded-2xl max-w-[90%] break-words font-medium whitespace-pre-wrap ${
                                                         isMe
                                                             ? "bg-emerald-500 text-white rounded-tr-none shadow-sm"
                                                             : "bg-slate-100 text-slate-800 rounded-tl-none border border-slate-150"
                                                     }`}
                                                 >
-                                                    {msg.message}
+                                                    {renderChatMessage(msg.message, isMe)}
                                                 </div>
                                             </div>
                                         );
@@ -517,12 +628,34 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                             </div>
 
                             {/* Send Input */}
-                            <form onSubmit={sendMessage} className="flex gap-2 border-t border-slate-100 pt-3">
+                            <form onSubmit={sendMessage} className="flex gap-2 border-t border-slate-100 pt-3 relative">
+                                {isMentioning && (
+                                    <div className="absolute bottom-full mb-2 left-0 w-64 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-[60]">
+                                        {safeUsers.filter((u: any) => u.name.toLowerCase().replace(/\s+/g, '').includes(mentionQuery.toLowerCase())).length > 0 ? (
+                                            safeUsers.filter((u: any) => u.name.toLowerCase().replace(/\s+/g, '').includes(mentionQuery.toLowerCase())).slice(0, 5).map((u: any) => (
+                                                <button
+                                                    key={u.id}
+                                                    type="button"
+                                                    onClick={() => insertChatMention(u.name.replace(/\s+/g, ''))}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center gap-2 border-b border-slate-50 last:border-0"
+                                                >
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px] shrink-0">
+                                                        {u.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <span className="font-medium text-slate-700 truncate">{u.name}</span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-4 py-3 text-xs text-slate-500 italic">No users found</div>
+                                        )}
+                                    </div>
+                                )}
                                 <input
+                                    ref={chatInputRef}
                                     type="text"
                                     value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Type a message..."
+                                    onChange={handleChatChange}
+                                    placeholder="Type a message... (@ to mention)"
                                     className="flex-1 text-xs border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-3 py-2"
                                     required
                                 />
@@ -539,6 +672,24 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                     </div>
                 )}
             </div>
+
+            <TaskModal
+                show={isCreateTaskOpen}
+                onClose={() => setIsCreateTaskOpen(false)}
+                project={project}
+                users={safeUsers}
+                defaultStatus="backlog"
+            />
+
+            <TaskDetailPanel
+                task={selectedTask}
+                isOpen={!!selectedTask}
+                onClose={() => setSelectedTask(null)}
+                projectSlug={project.slug}
+                allLabels={allLabels}
+                allProjectTasks={allProjectTasks}
+                users={safeUsers}
+            />
         </AuthenticatedLayout>
     );
 }
