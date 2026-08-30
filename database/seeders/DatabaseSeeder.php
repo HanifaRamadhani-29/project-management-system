@@ -17,12 +17,10 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-<<<<<<< Updated upstream
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
-=======
                 // 2. Seed Default User Accounts
         $admin = User::create([
             'name' => 'Super Admin',
@@ -59,6 +57,5 @@ class DatabaseSeeder extends Seeder
             'role' => 'viewer',
         ]);
         $viewer->assignRole('Viewer');
->>>>>>> Stashed changes
     }
 }
