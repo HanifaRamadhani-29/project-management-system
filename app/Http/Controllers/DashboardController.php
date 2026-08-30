@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -84,24 +85,43 @@ class DashboardController extends Controller
         // 4. Team workloads
         $teamWorkloads = [];
         if ($hasUserTable && $hasTaskTable) {
-            $teamWorkloads = \App\Models\User::select('users.id', 'users.name', 'users.email')
-                ->selectRaw('count(tasks.id) as active_tasks_count')
-                ->join('tasks', 'tasks.assignee_id', '=', 'users.id')
-                ->where('tasks.status', '!=', 'done')
-                ->whereNull('tasks.deleted_at')
-                ->groupBy('users.id', 'users.name', 'users.email')
-                ->orderByDesc('active_tasks_count')
+            // 4. Team Workload Aggregation (Top 5 members by incomplete tasks count)
+            if (Schema::hasTable('roles') && Schema::hasTable('model_has_roles')) {
+                $teamWorkloads = User::whereHas('roles', function ($q) {
+                    $q->where('name', '!=', 'Super Admin');
+                })
+                ->withCount(['tasks' => function ($q) {
+                    $q->where('status', '!=', 'done');
+                }])
+                ->orderByDesc('tasks_count')
                 ->take(5)
-                ->get()
+                ->get(['id', 'name', 'email'])
                 ->map(function ($u) {
                     return [
                         'id' => $u->id,
                         'name' => $u->name,
                         'email' => $u->email,
-                        'task_count' => $u->active_tasks_count,
+                        'task_count' => $u->tasks_count,
                     ];
                 })
                 ->toArray();
+            } else {
+                $teamWorkloads = User::withCount(['tasks' => function ($q) {
+                    $q->where('status', '!=', 'done');
+                }])
+                ->orderByDesc('tasks_count')
+                ->take(5)
+                ->get(['id', 'name', 'email'])
+                ->map(function ($u) {
+                    return [
+                        'id' => $u->id,
+                        'name' => $u->name,
+                        'email' => $u->email,
+                        'task_count' => $u->tasks_count,
+                    ];
+                })
+                ->toArray();
+            }
         }
 
         // 5. Recent projects
