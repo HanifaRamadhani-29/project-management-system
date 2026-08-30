@@ -4,18 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
 {
+    /** @use HasFactory<\Database\Factories\ProjectFactory> */
     use HasFactory;
 
     protected $fillable = [
         'name',
         'slug',
-        'status',
         'description',
+        'status',
         'start_date',
         'deadline',
         'manager_id',
@@ -28,6 +27,26 @@ class Project extends Model
 
     protected $appends = ['progress', 'is_overdue'];
 
+    public function manager()
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    public function members()
+    {
+        return $this->belongsToMany(User::class)->withPivot('role')->withTimestamps();
+    }
+
+    public function messages()
+    {
+        return $this->hasMany(ProjectMessage::class);
+    }
+
+    public function tasks()
+    {
+        return $this->hasMany(Task::class);
+    }
+
     /**
      * Get the route key for the model.
      */
@@ -36,53 +55,29 @@ class Project extends Model
         return 'slug';
     }
 
-    /**
-     * Get the tasks for the project.
-     */
-    public function tasks(): HasMany
-    {
-        return $this->hasMany(Task::class);
-    }
-
-    /**
-     * Get the project manager.
-     */
-    public function manager(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'manager_id');
-    }
-
-    /**
-     * Get the project members.
-     */
-    public function members(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'project_user', 'project_id', 'user_id')->withTimestamps();
-    }
-
-    /**
-     * Get the project task completion progress percentage.
-     */
     public function getProgressAttribute(): int
     {
-        $total = $this->tasks()->count();
-        $completed = $this->tasks()->where('status', 'done')->count();
-        return $total > 0 ? (int) round(($completed / $total) * 100) : 0;
+        $totalTasks = $this->tasks()->count();
+
+        if ($totalTasks === 0) {
+            return 0;
+        }
+
+        $doneTasks = $this->tasks()->where('status', 'done')->count();
+
+        return (int) round(($doneTasks / $totalTasks) * 100);
     }
 
-    /**
-     * Determine if the project is overdue.
-     */
     public function getIsOverdueAttribute(): bool
     {
-        return $this->status !== 'completed' && $this->deadline && $this->deadline->isPast();
-    }
+        if (in_array($this->status, ['completed', 'cancelled'], true)) {
+            return false;
+        }
 
-    /**
-     * Get the project chat messages.
-     */
-    public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
-    {
-        return $this->hasMany(ProjectMessage::class);
+        if (!$this->deadline) {
+            return false;
+        }
+
+        return $this->deadline->lt(now()->startOfDay());
     }
 }

@@ -4,190 +4,171 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\User;
-use App\Http\Requests\ProjectStoreRequest;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Inertia\Inertia;
-use Inertia\Response;
-use Illuminate\Http\RedirectResponse;
+use App\Services\ProjectService;
+use App\Http\Requests\StoreProjectRequest;
+use App\Http\Requests\StoreMemberRequest;
+use App\Http\Requests\UpdateProjectRequest;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ProjectController extends Controller
 {
-    /**
-     * Display a listing of the projects based on the user's role.
-     */
-    public function index(): Response
+    use AuthorizesRequests;
+
+    protected $projectService;
+
+    public function __construct(ProjectService $projectService)
     {
-        $user = auth()->user();
+        $this->projectService = $projectService;
+    }
 
-        // 1. Fetch projects according to role
-        if ($user->hasRole('Super Admin')) {
-            $projectsQuery = Project::query();
-        } else {
-            // Managed projects OR projects where the user is a member
-            $projectsQuery = Project::where('manager_id', $user->id)
-                ->orWhereHas('members', function ($query) use ($user) {
-                    $query->where('users.id', $user->id);
-                });
-        }
-
-        $projects = $projectsQuery->with(['manager', 'members'])
-            ->withCount('tasks')
-            ->latest()
-            ->get();
-
-        // 2. Fetch managers and all users for modal selections
-        $managers = User::role(['Project Manager', 'Super Admin'])->get(['id', 'name']);
-        $allUsers = User::get(['id', 'name', 'email']);
-
-        return Inertia::render('Projects/Index', [
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(\Illuminate\Http\Request $request)
+    {
+        $this->authorize('viewAny', Project::class);
+        $filters = $request->only(['search', 'status']);
+        $projects = $this->projectService->getAllProjects(auth()->user(), $filters);
+        
+        return inertia('Projects/Index', [
             'projects' => $projects,
-            'managers' => $managers,
-            'allUsers' => $allUsers,
+            'filters' => $filters
         ]);
     }
 
     /**
-     * Store a newly created project in storage.
+     * Show the form for creating a new resource.
      */
-    public function store(ProjectStoreRequest $request): RedirectResponse
+    public function create()
     {
-        $validated = $request->validated();
-        
-        // Generate unique slug
-        $slug = Str::slug($validated['name']);
-        $originalSlug = $slug;
-        $counter = 1;
-        while (Project::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
-            $counter++;
-        }
-        
-        $validated['slug'] = $slug;
-
-        Project::create($validated);
-
-        return redirect()->route('projects.index')
-            ->with('success', 'Project created successfully.');
+        $this->authorize('create', Project::class);
+        return inertia('Projects/Create', [
+            'users' => User::all()
+        ]);
     }
 
     /**
-     * Update the specified project in storage.
+     * Store a newly created resource in storage.
      */
-    public function update(ProjectStoreRequest $request, Project $project): RedirectResponse
+    public function store(StoreProjectRequest $request)
     {
-        $user = auth()->user();
+        $this->authorize('create', Project::class);
+        $project = $this->projectService->createProject($request->validated(), auth()->user());
         
-        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
-
-        // Authorize: Super Admin OR Project Manager assigned to the project
-        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        $validated = $request->validated();
-
-        // Update slug if name changes
-        if ($validated['name'] !== $project->name) {
-            $slug = Str::slug($validated['name']);
-            $originalSlug = $slug;
-            $counter = 1;
-            while (Project::where('slug', $slug)->where('id', '!=', $project->id)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
-            }
-            $validated['slug'] = $slug;
-        }
-
-        $project->update($validated);
-
-        return redirect()->route('projects.index')
-            ->with('success', 'Project updated successfully.');
+        return redirect()->route('projects.index')->with('success', 'Project created successfully.');
     }
 
     /**
-     * Remove the specified project from storage.
+     * Display the specified resource.
      */
-    public function destroy(Project $project): RedirectResponse
+    public function show(Project $project)
     {
-        $user = auth()->user();
+        $this->authorize('view', $project);
 
-        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
+        $project->load(['members', 'tasks', 'manager']);
+        $users = User::all();
 
-        // Authorize: Super Admin OR Project Manager assigned to the project
-        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
-            abort(403, 'Unauthorized action.');
+        // Task counts for Task Overview
+        $taskCounts = [
+            'todo' => $project->tasks()->whereIn('status', ['backlog', 'todo'])->count(),
+            'in_progress' => $project->tasks()->whereIn('status', ['in_progress', 'review'])->count(),
+            'done' => $project->tasks()->where('status', 'done')->count(),
+        ];
+
+        return inertia('Projects/Show', [
+            'project' => $project,
+            'members' => $project->members,
+            'users' => $users,
+            'taskCounts' => $taskCounts,
+        ]);
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(Project $project)
+    {
+        $this->authorize('update', $project);
+        return inertia('Projects/Edit', [
+            'project' => $project,
+            'users' => User::all()
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateProjectRequest $request, Project $project)
+    {
+        $this->authorize('update', $project);
+        $this->projectService->updateProject($project, $request->validated(), auth()->user());
+        
+        return redirect()->route('projects.index')->with('success', 'Project updated successfully.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Project $project)
+    {
+        $this->authorize('delete', $project);
+        $this->projectService->deleteProject($project, auth()->user());
+        
+        return redirect()->route('projects.index')->with('success', 'Project deleted successfully.');
+    }
+
+    /**
+     * Store a member to the project.
+     */
+    public function storeMember(StoreMemberRequest $request, Project $project)
+    {
+        $this->authorize('update', $project);
+
+        try {
+            $this->projectService->addMember((int) $project->id, (int) $request->validated()['user_id'], (string) $request->validated()['role']);
+
+            return redirect()->back()->with('success', 'Member added successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
-
-        $project->delete();
-
-        return redirect()->route('projects.index')
-            ->with('success', 'Project deleted successfully.');
     }
 
     /**
      * Add a member to the project.
      */
-    public function addMember(Project $project, Request $request): RedirectResponse
+    public function addMember(\Illuminate\Http\Request $request, Project $project)
     {
-        $user = auth()->user();
-
-        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
-
-        // Authorize
-        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
-            abort(403, 'Unauthorized action.');
-        }
+        $this->authorize('update', $project);
 
         $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'user_id' => 'required|integer|exists:users,id',
+            'role' => 'required|string',
         ]);
 
-        $project->members()->syncWithoutDetaching([$request->user_id]);
+        try {
+            $this->projectService->addMember((int) $project->id, (int) $request->user_id, (string) $request->role);
 
-        return redirect()->route('projects.index')
-            ->with('success', 'Member added to project successfully.');
+            return redirect()->back()->with('success', 'Member added successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['user_id' => $e->getMessage()]);
+        }
     }
 
     /**
      * Remove a member from the project.
      */
-    public function removeMember(Project $project, User $member): RedirectResponse
+    public function removeMember(Project $project, \App\Models\User $member)
     {
-        $user = auth()->user();
+        $this->authorize('update', $project);
 
-        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
+        try {
+            $this->projectService->removeMember($project, (int) $member->id);
 
-        // Authorize
-        if (!$isSuperAdmin && $project->manager_id !== $user->id) {
-            abort(403, 'Unauthorized action.');
+            return redirect()->back()->with('success', 'Member removed successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
         }
-
-        $project->members()->detach($member->id);
-
-        return redirect()->route('projects.index')
-            ->with('success', 'Member removed from project successfully.');
-    }
-
-    /**
-     * Display the specified project.
-     */
-    public function show(Project $project): Response
-    {
-        $user = auth()->user();
-
-        $isSuperAdmin = $user->role === 'super_admin' || $user->hasRole('Super Admin');
-
-        // Authorize: Super Admin OR Project Manager OR Project Member
-        if (!$isSuperAdmin 
-            && $project->manager_id !== $user->id 
-            && !$project->members->contains($user->id)
-        ) {
-            abort(403, 'Unauthorized action.');
-        }
-
-        return Inertia::render('Projects/Show', [
-            'project' => $project->load(['manager', 'members']),
-        ]);
     }
 }

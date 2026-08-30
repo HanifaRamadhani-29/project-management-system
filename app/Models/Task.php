@@ -4,69 +4,72 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Task extends Model
 {
-    use HasFactory, SoftDeletes;
+    /** @use HasFactory<\Database\Factories\TaskFactory> */
+    use HasFactory;
 
     protected $fillable = [
-        'project_id',
-        'parent_id',
         'title',
         'description',
         'status',
         'priority',
-        'reporter_id',
+        'project_id',
         'assignee_id',
-        'deadline',
+        'reporter_id',
+        'parent_id',
         'order',
+        'deadline',
     ];
 
-    protected $casts = [
-        'deadline' => 'date',
-        'order' => 'integer',
-    ];
-
-    /**
-     * Get the project that owns the task.
-     */
-    public function project(): BelongsTo
+    public function project()
     {
         return $this->belongsTo(Project::class);
     }
 
-    /**
-     * Get the user assigned to the task.
-     */
-    public function assignee(): BelongsTo
+    public function assignee()
     {
         return $this->belongsTo(User::class, 'assignee_id');
     }
 
-    /**
-     * Get the user who reported the task.
-     */
-    public function reporter(): BelongsTo
+    public function reporter()
     {
         return $this->belongsTo(User::class, 'reporter_id');
     }
 
-    /**
-     * Get the parent task.
-     */
-    public function parent(): BelongsTo
+    public function parent()
     {
-        return $this->belongsTo(self::class, 'parent_id');
+        return $this->belongsTo(Task::class, 'parent_id');
     }
 
-    /**
-     * Get the subtasks for the task.
-     */
-    public function subtasks(): HasMany
+    public function subtasks()
     {
-        return $this->hasMany(self::class, 'parent_id');
+        return $this->hasMany(Task::class, 'parent_id');
+    }
+
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class)->withTimestamps();
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(TaskApproval::class);
+    }
+
+    public function dependencies()
+    {
+        return $this->belongsToMany(Task::class, 'task_dependencies', 'task_id', 'depends_on_task_id')->withTimestamps();
     }
 }

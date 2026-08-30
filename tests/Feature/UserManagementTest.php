@@ -27,7 +27,10 @@ class UserManagementTest extends TestCase
         // Create default users
         $this->admin = User::factory()->create([
             'name' => 'Admin User',
+<<<<<<< HEAD
+=======
             'username' => 'admin_user',
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => 'admin@example.com',
             'role' => 'super_admin',
         ]);
@@ -35,7 +38,10 @@ class UserManagementTest extends TestCase
 
         $this->member = User::factory()->create([
             'name' => 'Member User',
+<<<<<<< HEAD
+=======
             'username' => 'member_user',
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => 'member@example.com',
             'role' => 'member',
         ]);
@@ -67,7 +73,10 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->post(route('users.store'), [
             'name' => 'New User',
+<<<<<<< HEAD
+=======
             'username' => 'newuser',
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => 'newuser@example.com',
             'password' => 'password123',
             'role' => 'project_manager',
@@ -75,13 +84,20 @@ class UserManagementTest extends TestCase
 
         $response->assertRedirect(route('users.index'));
         $this->assertDatabaseHas('users', [
+<<<<<<< HEAD
+=======
             'username' => 'newuser',
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => 'newuser@example.com',
             'role' => 'project_manager',
         ]);
 
         // Assert Spatie role is assigned
+<<<<<<< HEAD
+        $createdUser = User::where('email', 'newuser@example.com')->first();
+=======
         $createdUser = User::where('username', 'newuser')->first();
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
         $this->assertTrue($createdUser->hasRole('Project Manager'));
     }
 
@@ -92,7 +108,10 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->put(route('users.update', $this->member->id), [
             'name' => 'Updated Member',
+<<<<<<< HEAD
+=======
             'username' => 'updatedmember',
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => 'updatedmember@example.com',
             'role' => 'viewer',
         ]);
@@ -101,7 +120,10 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $this->member->id,
             'name' => 'Updated Member',
+<<<<<<< HEAD
+=======
             'username' => 'updatedmember',
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => 'updatedmember@example.com',
             'role' => 'viewer',
         ]);
@@ -116,8 +138,12 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->put(route('users.update', $this->admin->id), [
             'name' => 'Admin User Updated',
+<<<<<<< HEAD
+            'email' => 'admin@example.com',
+=======
             'username' => $this->admin->username,
             'email' => $this->admin->email,
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'role' => 'member',
         ]);
 

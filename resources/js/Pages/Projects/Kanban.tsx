@@ -9,6 +9,11 @@ import {
     DropResult,
 } from "@hello-pangea/dnd";
 import axios from "axios";
+<<<<<<< HEAD
+import TaskModal from "./TaskModal";
+import TaskDetailPanel from "./TaskDetailPanel";
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
 import {
     AlertCircle,
     Calendar,
@@ -43,6 +48,12 @@ const columnTitles: Record<ColumnId, string> = {
 interface KanbanProps {
     project: Project;
     tasks: Task[];
+<<<<<<< HEAD
+    users?: any[];
+    allLabels?: any[];
+    allProjectTasks?: any[];
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
 }
 
 interface ColumnsState {
@@ -53,7 +64,15 @@ interface ColumnsState {
     done: Task[];
 }
 
+<<<<<<< HEAD
+export default function Kanban({ project, tasks, users = [], allLabels = [], allProjectTasks = [] }: KanbanProps) {
+    const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
+    const modalUsers = users.length > 0 ? users : (project.members ?? []);
+    const safeUsers = modalUsers.length > 0 ? modalUsers : (Array.isArray((usePage() as any).props.users) ? (usePage() as any).props.users : []);
+
+=======
 export default function Kanban({ project, tasks }: KanbanProps) {
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
     // Group and sort initial tasks by status and their order
     const getInitialColumns = (taskList: Task[]): ColumnsState => {
         return {
@@ -79,6 +98,14 @@ export default function Kanban({ project, tasks }: KanbanProps) {
         getInitialColumns(tasks)
     );
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+<<<<<<< HEAD
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+    useEffect(() => {
+        setColumns(getInitialColumns(tasks));
+    }, [tasks]);
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
 
     // Chat room state
     const currentUser = usePage().props.auth.user;
@@ -87,6 +114,56 @@ export default function Kanban({ project, tasks }: KanbanProps) {
     const [newMessage, setNewMessage] = useState("");
     const [isSendingMessage, setIsSendingMessage] = useState(false);
     const chatEndRef = useRef<HTMLDivElement>(null);
+<<<<<<< HEAD
+    const chatInputRef = useRef<HTMLInputElement>(null);
+
+    const [isMentioning, setIsMentioning] = useState(false);
+    const [mentionQuery, setMentionQuery] = useState('');
+
+    const handleChatChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setNewMessage(value);
+
+        const cursorPosition = e.target.selectionStart || 0;
+        const textBeforeCursor = value.substring(0, cursorPosition);
+        const match = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+        
+        if (match) {
+            setIsMentioning(true);
+            setMentionQuery(match[1]);
+        } else {
+            setIsMentioning(false);
+        }
+    };
+
+    const insertChatMention = (username: string) => {
+        const currentText = newMessage;
+        const cursorPosition = chatInputRef.current?.selectionStart || 0;
+        const textBeforeCursor = currentText.substring(0, cursorPosition);
+        const textAfterCursor = currentText.substring(cursorPosition);
+        
+        const match = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+        if (match) {
+            const prefixIndex = match.index! + match[0].lastIndexOf('@');
+            const prefix = textBeforeCursor.substring(0, prefixIndex);
+            const newText = prefix + `@${username} ` + textAfterCursor;
+            setNewMessage(newText);
+        }
+        setIsMentioning(false);
+        setTimeout(() => chatInputRef.current?.focus(), 10);
+    };
+
+    const renderChatMessage = (content: string, isMe: boolean) => {
+        const parts = content.split(/(@\w+)/g);
+        return parts.map((part, i) => {
+            if (part.startsWith('@')) {
+                return <span key={i} className={`font-bold px-1 rounded-sm ${isMe ? 'bg-emerald-600/50 text-white' : 'text-indigo-600 bg-indigo-50'}`}>{part}</span>;
+            }
+            return <span key={i}>{part}</span>;
+        });
+    };
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
 
     // Fetch and poll messages
     useEffect(() => {
@@ -129,6 +206,10 @@ export default function Kanban({ project, tasks }: KanbanProps) {
             if (response.data.success) {
                 setChatMessages((prev) => [...prev, response.data.message]);
                 setNewMessage("");
+<<<<<<< HEAD
+                setIsMentioning(false);
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             }
         } catch (err) {
             console.error("Failed to send message:", err);
@@ -264,6 +345,16 @@ export default function Kanban({ project, tasks }: KanbanProps) {
 
                     <div className="flex items-center gap-3">
                         <button
+<<<<<<< HEAD
+                            onClick={() => setIsCreateTaskOpen(true)}
+                            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-indigo-500 transition"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Task
+                        </button>
+                        <button
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
                             onClick={() => setIsChatOpen(!isChatOpen)}
                             className={`flex items-center gap-1.5 px-4 py-2 border rounded-xl text-sm font-semibold transition ${
                                 isChatOpen
@@ -310,7 +401,11 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                                 </span>
                                 <p className="text-sm text-slate-700 font-semibold flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-slate-400" />
+<<<<<<< HEAD
+                                    {project.start_date ? new Date(project.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"} to {project.deadline ? new Date(project.deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : "N/A"}
+=======
                                     {project.start_date || "N/A"} to {project.deadline || "N/A"}
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
                                 </p>
                             </div>
                         </div>
@@ -372,6 +467,40 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                                                                         ref={provided.innerRef}
                                                                         {...provided.draggableProps}
                                                                         {...provided.dragHandleProps}
+<<<<<<< HEAD
+                                                                        onClick={() => setSelectedTask(task)}
+                                                                        className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md hover:border-indigo-200 transition duration-150 flex flex-col gap-3 group cursor-pointer"
+                                                                    >
+                                                                        {/* Card Label/Priority */}
+                                                                        <div className="flex flex-col gap-2">
+                                                                            <div className="flex items-center justify-between">
+                                                                                <span
+                                                                                    className={`inline-flex px-2 py-0.5 border rounded text-[10px] font-bold capitalize ${getPriorityBadgeClass(
+                                                                                        task.priority
+                                                                                    )}`}
+                                                                                >
+                                                                                    {formatPriority(
+                                                                                        task.priority
+                                                                                    )}
+                                                                                </span>
+                                                                                <span className="text-[10px] text-slate-350 font-bold group-hover:text-slate-500 transition">
+                                                                                    #{task.id}
+                                                                                </span>
+                                                                            </div>
+                                                                            {task.labels && task.labels.length > 0 && (
+                                                                                <div className="flex flex-wrap gap-1">
+                                                                                    {task.labels.map(label => (
+                                                                                        <span 
+                                                                                            key={label.id}
+                                                                                            className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white shadow-sm"
+                                                                                            style={{ backgroundColor: label.color }}
+                                                                                        >
+                                                                                            {label.name}
+                                                                                        </span>
+                                                                                    ))}
+                                                                                </div>
+                                                                            )}
+=======
                                                                         className="bg-white border border-slate-100 rounded-xl p-4 shadow-sm hover:shadow-md transition duration-150 flex flex-col gap-3 group"
                                                                     >
                                                                         {/* Card Label/Priority */}
@@ -388,6 +517,7 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                                                                             <span className="text-[10px] text-slate-350 font-bold group-hover:text-slate-500 transition">
                                                                                 #{task.id}
                                                                             </span>
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
                                                                         </div>
 
                                                                         {/* Card Title & Desc */}
@@ -497,13 +627,21 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                                                     {msg.user?.name || "Unknown"}
                                                 </span>
                                                 <div
+<<<<<<< HEAD
+                                                    className={`px-3 py-2 rounded-2xl max-w-[90%] break-words font-medium whitespace-pre-wrap ${
+=======
                                                     className={`px-3 py-2 rounded-2xl max-w-[90%] break-words font-medium ${
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
                                                         isMe
                                                             ? "bg-emerald-500 text-white rounded-tr-none shadow-sm"
                                                             : "bg-slate-100 text-slate-800 rounded-tl-none border border-slate-150"
                                                     }`}
                                                 >
+<<<<<<< HEAD
+                                                    {renderChatMessage(msg.message, isMe)}
+=======
                                                     {msg.message}
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
                                                 </div>
                                             </div>
                                         );
@@ -517,12 +655,43 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                             </div>
 
                             {/* Send Input */}
+<<<<<<< HEAD
+                            <form onSubmit={sendMessage} className="flex gap-2 border-t border-slate-100 pt-3 relative">
+                                {isMentioning && (
+                                    <div className="absolute bottom-full mb-2 left-0 w-64 bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden z-[60]">
+                                        {safeUsers.filter((u: any) => u.name.toLowerCase().replace(/\s+/g, '').includes(mentionQuery.toLowerCase())).length > 0 ? (
+                                            safeUsers.filter((u: any) => u.name.toLowerCase().replace(/\s+/g, '').includes(mentionQuery.toLowerCase())).slice(0, 5).map((u: any) => (
+                                                <button
+                                                    key={u.id}
+                                                    type="button"
+                                                    onClick={() => insertChatMention(u.name.replace(/\s+/g, ''))}
+                                                    className="w-full text-left px-4 py-2 text-sm hover:bg-emerald-50 hover:text-emerald-700 transition flex items-center gap-2 border-b border-slate-50 last:border-0"
+                                                >
+                                                    <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-[10px] shrink-0">
+                                                        {u.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <span className="font-medium text-slate-700 truncate">{u.name}</span>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-4 py-3 text-xs text-slate-500 italic">No users found</div>
+                                        )}
+                                    </div>
+                                )}
+                                <input
+                                    ref={chatInputRef}
+                                    type="text"
+                                    value={newMessage}
+                                    onChange={handleChatChange}
+                                    placeholder="Type a message... (@ to mention)"
+=======
                             <form onSubmit={sendMessage} className="flex gap-2 border-t border-slate-100 pt-3">
                                 <input
                                     type="text"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Type a message..."
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
                                     className="flex-1 text-xs border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-3 py-2"
                                     required
                                 />
@@ -539,6 +708,27 @@ export default function Kanban({ project, tasks }: KanbanProps) {
                     </div>
                 )}
             </div>
+<<<<<<< HEAD
+
+            <TaskModal
+                show={isCreateTaskOpen}
+                onClose={() => setIsCreateTaskOpen(false)}
+                project={project}
+                users={safeUsers}
+                defaultStatus="backlog"
+            />
+
+            <TaskDetailPanel
+                task={selectedTask}
+                isOpen={!!selectedTask}
+                onClose={() => setSelectedTask(null)}
+                projectSlug={project.slug}
+                allLabels={allLabels}
+                allProjectTasks={allProjectTasks}
+                users={safeUsers}
+            />
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
         </AuthenticatedLayout>
     );
 }
