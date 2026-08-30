@@ -18,7 +18,15 @@ class UserController extends Controller
     protected function authorizeSuperAdmin(): void
     {
         $user = auth()->user();
-        if (!$user || !($user->role === 'super_admin' || $user->hasRole('Super Admin'))) {
+        if (!$user) {
+            abort(403, 'Unauthenticated.');
+        }
+
+        $isSuperAdmin = $user->role === 'super_admin' 
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (method_exists($user, 'hasRole') && ($user->hasRole('super_admin') || $user->hasRole('Super Admin')));
+
+        if (!$isSuperAdmin) {
             abort(403, 'Unauthorized action. Only Super Admins can access this resource.');
         }
     }
@@ -26,7 +34,15 @@ class UserController extends Controller
     protected function authorizeUserList(): void
     {
         $user = auth()->user();
-        if (!$user || !($user->hasRole('Super Admin') || $user->hasRole('Project Manager'))) {
+        if (!$user) {
+            abort(403, 'Unauthenticated.');
+        }
+
+        $allowedRoles = ['super_admin', 'Super Admin', 'project_manager', 'Project Manager'];
+        $hasAccess = in_array($user->role, $allowedRoles) 
+             || (method_exists($user, 'hasAnyRole') && $user->hasAnyRole($allowedRoles));
+
+        if (!$hasAccess) {
             abort(403, 'Unauthorized action. Only Super Admins and Project Managers can access user list.');
         }
     }
@@ -73,6 +89,7 @@ class UserController extends Controller
 
         $user = User::create([
             'name' => $validated['name'],
+            'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'role' => $validated['role'],
@@ -103,6 +120,7 @@ class UserController extends Controller
 
         $user->update([
             'name' => $validated['name'],
+            'username' => $validated['username'],
             'email' => $validated['email'],
             'role' => $validated['role'],
         ]);

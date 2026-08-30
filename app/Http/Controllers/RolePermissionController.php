@@ -17,7 +17,15 @@ class RolePermissionController extends Controller
     protected function authorizeSuperAdmin(): void
     {
         $user = auth()->user();
-        if (!$user || !($user->role === 'super_admin' || $user->hasRole('Super Admin'))) {
+        if (!$user) {
+            abort(403, 'Unauthenticated.');
+        }
+
+        $isSuperAdmin = $user->role === 'super_admin' 
+            || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())
+            || (method_exists($user, 'hasRole') && ($user->hasRole('super_admin') || $user->hasRole('Super Admin')));
+
+        if (!$isSuperAdmin) {
             abort(403, 'Unauthorized action. Only Super Admins can access this resource.');
         }
     }

@@ -143,8 +143,10 @@ class ProjectManagementTest extends TestCase
 
         // Add member
         $response = $this->actingAs($pm)
+            ->from(route('projects.index'))
             ->post(route('projects.members.add', $project->slug), [
                 'user_id' => $member->id,
+                'role' => 'member',
             ]);
         
         $response->assertRedirect(route('projects.index'));
@@ -152,6 +154,7 @@ class ProjectManagementTest extends TestCase
 
         // Remove member
         $response = $this->actingAs($pm)
+            ->from(route('projects.index'))
             ->delete(route('projects.members.remove', [$project->slug, $member->id]));
 
         $response->assertRedirect(route('projects.index'));

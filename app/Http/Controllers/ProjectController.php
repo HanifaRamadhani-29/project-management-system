@@ -133,42 +133,28 @@ class ProjectController extends Controller
         }
     }
 
-    /**
-     * Add a member to the project.
-     */
     public function addMember(\Illuminate\Http\Request $request, Project $project)
     {
         $this->authorize('update', $project);
 
         $request->validate([
-            'user_id' => 'required|integer|exists:users,id',
-            'role' => 'required|string',
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|in:project_manager,member,viewer',
         ]);
 
-        try {
-            $this->projectService->addMember((int) $project->id, (int) $request->user_id, (string) $request->role);
+        $project->members()->syncWithoutDetaching([
+            $request->user_id => ['role' => $request->role]
+        ]);
 
-            return redirect()->back()->with('success', 'Member added successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['user_id' => $e->getMessage()]);
-        }
+        return redirect()->back()->with('success', 'Member added successfully.');
     }
 
-    /**
-     * Remove a member from the project.
-     */
-    public function removeMember(Project $project, \App\Models\User $member)
+    public function removeMember(Project $project, \App\Models\User $user)
     {
         $this->authorize('update', $project);
 
-        try {
-            $this->projectService->removeMember($project, (int) $member->id);
+        $project->members()->detach($user->id);
 
-            return redirect()->back()->with('success', 'Member removed successfully.');
-        } catch (\Exception $e) {
-            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
-        }
+        return redirect()->back()->with('success', 'Member removed successfully.');
     }
 }

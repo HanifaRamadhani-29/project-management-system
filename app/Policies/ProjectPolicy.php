@@ -4,7 +4,6 @@ namespace App\Policies;
 
 use App\Models\Project;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class ProjectPolicy
 {
@@ -21,7 +20,8 @@ class ProjectPolicy
      */
     public function view(User $user, Project $project): bool
     {
-        if ($user->hasRole('Super Admin')) return true;
+        if ($user->hasRole('Super Admin') || $user->role === 'super_admin') return true;
+        if ($project->manager_id === $user->id) return true;
 
         return $project->members()->where('user_id', $user->id)->exists();
     }
@@ -31,7 +31,7 @@ class ProjectPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('Super Admin') || $user->hasRole('Project Manager');
+        return $user->hasRole('Super Admin') || $user->role === 'super_admin' || $user->hasRole('Project Manager') || $user->role === 'project_manager';
     }
 
     /**
@@ -39,11 +39,11 @@ class ProjectPolicy
      */
     public function update(User $user, Project $project): bool
     {
-        if ($user->hasRole('Super Admin')) return true;
+        if ($user->hasRole('Super Admin') || $user->role === 'super_admin') return true;
 
-        return $project->members()
+        return $project->manager_id === $user->id || $project->members()
             ->where('user_id', $user->id)
-            ->where('role', 'Project Manager')
+            ->whereIn('project_user.role', ['Project Manager', 'project_manager'])
             ->exists();
     }
 
@@ -52,7 +52,7 @@ class ProjectPolicy
      */
     public function delete(User $user, Project $project): bool
     {
-        return $user->hasRole('Super Admin');
+        return $user->hasRole('Super Admin') || $user->role === 'super_admin';
     }
 
     /**

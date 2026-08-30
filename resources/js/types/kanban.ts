@@ -17,6 +17,11 @@ export interface Task {
     deleted_at?: string | null;
     assignee?: User | null;
     reporter?: User;
+    labels?: any[];
+    comments?: any[];
+    attachments?: any[];
+    subtasks?: any[];
+    dependencies?: any[];
 }
 
 export interface Column {

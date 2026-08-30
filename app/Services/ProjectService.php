@@ -145,7 +145,10 @@ class ProjectService
     {
         $user = auth()->user();
 
-        if (!$user || (!$user->hasRole('Super Admin') && !$project->members()->where('user_id', $user->id)->where('role', 'Project Manager')->exists())) {
+        $isSuperAdmin = $user->hasRole('Super Admin') || $user->role === 'super_admin';
+        $isProjectPM = $project->manager_id === $user->id || $project->members()->where('user_id', $user->id)->whereIn('project_user.role', ['Project Manager', 'project_manager'])->exists();
+
+        if (!$user || (!$isSuperAdmin && !$isProjectPM)) {
             abort(403, 'Hanya Project Manager atau Super Admin yang boleh menghapus member project.');
         }
 

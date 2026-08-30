@@ -33,8 +33,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/projects/{project}/edit', [ProjectController::class, 'edit'])->name('projects.edit');
     Route::put('/projects/{project}', [ProjectController::class, 'update'])->name('projects.update');
     Route::delete('/projects/{project}', [ProjectController::class, 'destroy'])->name('projects.destroy');
-    Route::post('/projects/{project}/members', [ProjectController::class, 'storeMember'])->name('projects.members.store');
-    Route::delete('/projects/{project}/members/{member}', [ProjectController::class, 'removeMember'])->name('projects.members.remove');
+    Route::post('/projects/{project}/members', [ProjectController::class, 'addMember'])->name('projects.members.add');
+    Route::delete('/projects/{project}/members/{user}', [ProjectController::class, 'removeMember'])->name('projects.members.remove');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
 

@@ -65,6 +65,7 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->post(route('users.store'), [
             'name' => 'New User',
+            'username' => 'newuser',
             'email' => 'newuser@example.com',
             'password' => 'password123',
             'role' => 'project_manager',
@@ -88,6 +89,7 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->put(route('users.update', $this->member->id), [
             'name' => 'Updated Member',
+            'username' => 'updatedmember',
             'email' => 'updatedmember@example.com',
             'role' => 'viewer',
         ]);
@@ -110,6 +112,7 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->put(route('users.update', $this->admin->id), [
             'name' => 'Admin User Updated',
+            'username' => 'admin',
             'email' => 'admin@example.com',
             'role' => 'member',
         ]);
@@ -151,7 +154,8 @@ class UserManagementTest extends TestCase
         ]);
 
         $response->assertRedirect(route('users.index'));
-        $this->assertTrue(auth()->attempt([
+        // KODE BARU:
+        $this->assertTrue(\Illuminate\Support\Facades\Auth::attempt([
             'email' => 'member@example.com',
             'password' => 'newsecretpassword123',
         ]));

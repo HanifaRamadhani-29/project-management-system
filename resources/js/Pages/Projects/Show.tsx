@@ -43,14 +43,18 @@ const formatDate = (value: string | null) => {
 
 export default function Show({ project, users = [], taskCounts = { todo: 0, in_progress: 0, done: 0 } }: PageProps<{ project: Project; users?: { id: number; name: string; email?: string }[]; taskCounts?: { todo: number; in_progress: number; done: number } }>) {
     const { delete: destroy } = useForm();
-    const { data, setData, post, processing, errors, reset } = useForm({
+    const { data, setData, post, processing, reset } = useForm({
         user_id: '',
-        role: 'Member',
+        role: 'member',
     });
+    
     const members = project.members ?? [];
     const managerName = project.manager?.name ?? 'Unassigned';
     const progress = Math.max(0, Math.min(100, Number(project.progress ?? 0)));
     const isOverdue = Boolean(project.is_overdue);
+
+    // Filter users who are not yet added to the project members
+    const nonMembers = users.filter(user => !members.some(member => member.id === user.id));
 
     const handleDelete = () => {
         if (confirm('Are you sure you want to delete this project?')) {
@@ -58,12 +62,11 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
         }
     };
 
-    const submitMember = (e: React.FormEvent) => {
+    const handleAddMember = (e: React.FormEvent) => {
         e.preventDefault();
-
-        post(route('projects.members.store', project.slug), {
-            preserveScroll: true,
-            onSuccess: () => reset('user_id'),
+        if (!data.user_id) return;
+        post(route('projects.members.add', project.slug), {
+            onSuccess: () => reset(),
         });
     };
 
@@ -93,6 +96,12 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                     </div>
 
                     <div className="flex items-center gap-2">
+                        <Link
+                            href={route('projects.kanban', project.slug)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500"
+                        >
+                            📋 Buka Kanban Board
+                        </Link>
                         <Link
                             href={route('projects.edit', project.slug)}
                             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
@@ -240,7 +249,7 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                             <h3 className="text-xl font-bold text-slate-900">Team Members</h3>
                         </div>
 
-                        <form onSubmit={submitMember} className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <form onSubmit={handleAddMember} className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <div>
                                 <label htmlFor="user_id" className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                                     User
@@ -252,15 +261,12 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                                     className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                                 >
                                     <option value="">Select a user</option>
-                                    {users.map((user) => (
+                                    {nonMembers.map((user) => (
                                         <option key={user.id} value={String(user.id)}>
                                             {user.name}
                                         </option>
                                     ))}
                                 </select>
-                                {errors.user_id && (
-                                    <p className="mt-2 text-xs text-rose-600">{errors.user_id}</p>
-                                )}
                             </div>
 
                             <div>
@@ -271,11 +277,11 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                                     id="role"
                                     value={data.role}
                                     onChange={(e) => setData('role', e.target.value)}
-                                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                    className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
                                 >
-                                    <option value="Project Manager">Project Manager</option>
-                                    <option value="Member">Member</option>
-                                    <option value="Viewer">Viewer</option>
+                                    <option value="project_manager">Project Manager</option>
+                                    <option value="member">Member</option>
+                                    <option value="viewer">Viewer</option>
                                 </select>
                             </div>
 
@@ -306,11 +312,11 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${
-                                                (member as any).pivot?.role === 'Super Admin'
+                                                (member as any).pivot?.role === 'super_admin' || (member as any).pivot?.role === 'Super Admin'
                                                     ? 'bg-emerald-100 text-emerald-700'
-                                                    : (member as any).pivot?.role === 'Project Manager' 
+                                                    : (member as any).pivot?.role === 'project_manager' || (member as any).pivot?.role === 'Project Manager' 
                                                         ? 'bg-indigo-100 text-indigo-700' 
-                                                        : (member as any).pivot?.role === 'Viewer' 
+                                                        : (member as any).pivot?.role === 'viewer' || (member as any).pivot?.role === 'Viewer' 
                                                             ? 'bg-amber-100 text-amber-700'
                                                             : 'bg-slate-100 text-slate-600'
                                             }`}>
