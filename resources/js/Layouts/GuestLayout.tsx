@@ -1,17 +1,20 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Link } from '@inertiajs/react';
 import { PropsWithChildren } from 'react';
 
 export default function Guest({ children }: PropsWithChildren) {
     return (
-        <div className="flex min-h-screen flex-col items-center bg-gray-100 pt-6 sm:justify-center sm:pt-0">
-            <div>
-                <Link href="/">
-                    <ApplicationLogo className="h-20 w-20 fill-current text-gray-500" />
-                </Link>
+        <div className="min-h-screen bg-slate-50 flex flex-col justify-center items-center p-4 text-slate-850 font-sans selection:bg-indigo-600 selection:text-white relative overflow-hidden">
+            {/* Header */}
+            <div className="mb-6 flex flex-col items-center gap-2.5 relative z-10">
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center font-black text-white shadow-md text-lg">
+                    P
+                </div>
+                <span className="font-extrabold text-xl tracking-tight text-slate-900">
+                    ProManage Enterprise
+                </span>
             </div>
 
-            <div className="mt-6 w-full overflow-hidden bg-white px-6 py-4 shadow-md sm:max-w-md sm:rounded-lg">
+            {/* Form Card */}
+            <div className="w-full max-w-md bg-white border border-slate-200 p-8 rounded-2xl shadow-xl relative z-10 animate-fade-in">
                 {children}
             </div>
         </div>
