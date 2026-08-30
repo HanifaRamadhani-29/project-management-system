@@ -14,10 +14,23 @@ class TaskApproval extends Model
         'task_id',
         'status',
         'feedback',
+        'requested_by',
+        'reviewed_by',
+        'note',
     ];
 
     public function task()
     {
         return $this->belongsTo(Task::class);
+    }
+
+    public function requestedBy()
+    {
+        return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    public function reviewedBy()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 }

@@ -92,10 +92,34 @@ export default function Kanban({ project, tasks, users = [], allLabels = [], all
 
     useEffect(() => {
         setColumns(getInitialColumns(tasks));
+
+        if (selectedTask) {
+            let found: Task | undefined;
+            // Search in parent tasks first
+            found = tasks.find((t) => t.id === selectedTask.id);
+            // Search in subtasks of parent tasks if not found
+            if (!found) {
+                for (const parent of tasks) {
+                    if (parent.subtasks) {
+                        found = parent.subtasks.find((t) => t.id === selectedTask.id);
+                        if (found) break;
+                    }
+                }
+            }
+
+            if (found) {
+                setSelectedTask(found);
+            } else {
+                setSelectedTask(null);
+            }
+        }
     }, [tasks]);
 
     // Chat room state
     const currentUser = usePage().props.auth.user;
+    const { auth } = usePage().props as any;
+    const hasPermission = (perm: string) => 
+        currentUser?.role === 'super_admin' || auth?.user?.permissions?.includes(perm);
     const [isChatOpen, setIsChatOpen] = useState(false);
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState("");
@@ -325,13 +349,15 @@ export default function Kanban({ project, tasks, users = [], allLabels = [], all
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsCreateTaskOpen(true)}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-indigo-500 transition"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add Task
-                        </button>
+                        {hasPermission('tasks.create') && (
+                            <button
+                                onClick={() => setIsCreateTaskOpen(true)}
+                                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold shadow-sm hover:bg-indigo-500 transition"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add Task
+                            </button>
+                        )}
                         <button
                             onClick={() => setIsChatOpen(!isChatOpen)}
                             className={`flex items-center gap-1.5 px-4 py-2 border rounded-xl text-sm font-semibold transition ${
