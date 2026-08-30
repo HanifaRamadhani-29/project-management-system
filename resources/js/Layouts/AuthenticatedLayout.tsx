@@ -49,9 +49,7 @@ export default function Authenticated({
         adminSection.push({ name: "Audit Logs", href: "/audit-logs", icon: History, active: false });
     }
 
-    if (isSuperAdmin || isPM) {
-        adminSection.push({ name: "Reports", href: "/reports", icon: BarChart3, active: false });
-    }
+
 
     // Dynamic role badges
     const getRoleDetails = () => {
