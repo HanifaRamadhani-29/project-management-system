@@ -28,7 +28,10 @@ class UpdateTaskRequest extends FormRequest
             'status' => ['sometimes', 'required', 'in:backlog,todo,in_progress,review,done'],
             'priority' => ['sometimes', 'required', 'in:low,medium,high,critical'],
             'assignee_id' => ['nullable', 'exists:users,id'],
+            'reporter_id' => ['nullable', 'exists:users,id'],
+            'parent_id' => ['nullable', 'exists:tasks,id'],
             'deadline' => ['nullable', 'date'],
+            'order' => ['nullable', 'integer'],
         ];
     }
 }

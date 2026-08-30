@@ -1,6 +1,18 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
-import { PageProps, Project } from '@/types';
+import { Head, Link, router } from '@inertiajs/react';
+import { PageProps } from '@/types';
+import { Project } from '@/types/project';
+import { Search, Filter } from 'lucide-react';
+import { useState, useCallback, useEffect } from 'react';
+import Pagination from '@/Components/Pagination';
+
+type PaginatedProjects = {
+    data: Project[];
+    links: any[];
+    current_page: number;
+    last_page: number;
+    total: number;
+};
 
 const getStatusClass = (status: string) => {
     const normalized = status?.toLowerCase();
@@ -24,10 +36,43 @@ const getStatusClass = (status: string) => {
 
 const formatDeadline = (value: string | null) => {
     if (!value) return 'No deadline';
-    return value;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('en-GB', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    }).format(date);
 };
 
-export default function Index({ projects }: PageProps<{ projects: Project[] }>) {
+export default function Index({ projects, filters }: PageProps<{ projects: PaginatedProjects, filters: { search?: string, status?: string } }>) {
+    const [search, setSearch] = useState(filters?.search || '');
+    const [status, setStatus] = useState(filters?.status || '');
+
+    // Debounced search
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (search !== (filters?.search || '')) {
+                handleFilterChange(search, status);
+            }
+        }, 300);
+        return () => clearTimeout(timeoutId);
+    }, [search]);
+
+    const handleFilterChange = (newSearch: string, newStatus: string) => {
+        router.get(
+            route('projects.index'),
+            { search: newSearch, status: newStatus },
+            { preserveState: true, replace: true }
+        );
+    };
+
+    const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newStatus = e.target.value;
+        setStatus(newStatus);
+        handleFilterChange(search, newStatus);
+    };
+
     return (
         <AuthenticatedLayout
             header={
@@ -48,8 +93,40 @@ export default function Index({ projects }: PageProps<{ projects: Project[] }>) 
         >
             <Head title="Projects" />
 
+            <div className="mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full md:w-96">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <Search className="w-5 h-5 text-slate-400" />
+                    </div>
+                    <input
+                        type="text"
+                        className="bg-white border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-10 p-2.5 shadow-sm"
+                        placeholder="Search projects by name..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+                <div className="relative w-full md:w-auto">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <Filter className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <select
+                        className="bg-white border border-slate-200 text-slate-700 text-sm rounded-xl focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-9 p-2.5 shadow-sm appearance-none pr-8"
+                        value={status}
+                        onChange={handleStatusChange}
+                    >
+                        <option value="">All Statuses</option>
+                        <option value="planning">Planning</option>
+                        <option value="active">Active</option>
+                        <option value="on_hold">On Hold</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+            </div>
+
             <div className="space-y-6">
-                {projects.length === 0 ? (
+                {projects.data.length === 0 ? (
                     <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-sm">
                         <p className="text-lg font-semibold text-slate-700">No projects yet</p>
                         <p className="mt-2 text-sm text-slate-500">
@@ -57,8 +134,9 @@ export default function Index({ projects }: PageProps<{ projects: Project[] }>) 
                         </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
-                        {projects.map((project) => (
+                    <>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+                            {projects.data.map((project) => (
                             <Link
                                 key={project.id}
                                 href={route('projects.show', project.slug)}
@@ -89,7 +167,10 @@ export default function Index({ projects }: PageProps<{ projects: Project[] }>) 
                                 </div>
                             </Link>
                         ))}
-                    </div>
+                        </div>
+                        
+                        <Pagination links={projects.links} />
+                    </>
                 )}
             </div>
         </AuthenticatedLayout>

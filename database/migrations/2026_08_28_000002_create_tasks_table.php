@@ -13,27 +13,20 @@ return new class extends Migration
     {
         Schema::create('tasks', function (Blueprint $table) {
             $table->id();
-            // Relasi ke Project
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
-            
-            // Atribut Utama
+            $table->foreignId('parent_id')->nullable()->constrained('tasks')->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('status')->default('backlog'); // backlog, todo, in_progress, review, done
-            $table->string('priority')->default('medium'); // low, medium, high, critical
-            
-            // Untuk Fitur Subtask
-            $table->foreignId('parent_id')->nullable()->constrained('tasks')->nullOnDelete();
-            
-            // Relasi ke User (Assignee & Reporter)
+            $table->enum('status', ['backlog', 'todo', 'in_progress', 'review', 'done']);
+            $table->enum('priority', ['low', 'medium', 'high', 'critical']);
+            $table->foreignId('reporter_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('assignee_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->foreignId('reporter_id')->nullable()->constrained('users')->nullOnDelete();
-            
-            // Untuk Fitur Kanban (Urutan)
-            $table->integer('order')->default(0);
-            
             $table->date('deadline')->nullable();
+            $table->unsignedInteger('order')->default(0);
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index(['project_id', 'status', 'order']);
         });
     }
 

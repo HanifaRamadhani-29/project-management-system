@@ -11,35 +11,17 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Route Dummy untuk Projects agar navigasi tidak error
-    Route::get('/projects', function () {
-        return Inertia::render('Dashboard'); // Sementara arahkan ke dashboard dulu
-    })->name('projects.index');
-
-    Route::get('/users', function () {
-        return Inertia::render('Dashboard');
-    })->name('users.index');
-    // Route Projects CRUD & Members Management
     Route::get('/projects', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projects/create', [ProjectController::class, 'create'])->name('projects.create');
     Route::post('/projects', [ProjectController::class, 'store'])->name('projects.store');
@@ -50,6 +32,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/projects/{project}/members', [ProjectController::class, 'storeMember'])->name('projects.members.store');
     Route::delete('/projects/{project}/members/{member}', [ProjectController::class, 'removeMember'])->name('projects.members.remove');
 
+    Route::get('/users', [UserController::class, 'index'])->name('users.index');
+
     Route::post('/tasks/{task}/comments', [App\Http\Controllers\CommentController::class, 'store'])->name('tasks.comments.store');
     Route::delete('/comments/{comment}', [App\Http\Controllers\CommentController::class, 'destroy'])->name('comments.destroy');
     
@@ -57,10 +41,21 @@ Route::middleware('auth')->group(function () {
     Route::delete('/attachments/{attachment}', [App\Http\Controllers\AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
     Route::get('/projects/{project}/kanban', [TaskController::class, 'kanban'])->name('projects.kanban');
+    Route::get('/projects/{project}/tasks', [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/projects/{project}/tasks/{task}', [TaskController::class, 'show'])->name('tasks.show');
     Route::patch('/projects/{project}/tasks/reorder', [App\Http\Controllers\TaskController::class, 'reorder'])->name('tasks.reorder');
     Route::post('/projects/{project}/tasks', [App\Http\Controllers\TaskController::class, 'store'])->name('tasks.store');
+    Route::post('/projects/{project}/tasks/{task}/subtasks', [App\Http\Controllers\TaskController::class, 'createSubtask'])->name('tasks.subtasks.store');
     Route::put('/projects/{project}/tasks/{task}', [App\Http\Controllers\TaskController::class, 'update'])->name('tasks.update');
     Route::delete('/projects/{project}/tasks/{task}', [App\Http\Controllers\TaskController::class, 'destroy'])->name('tasks.destroy');
+
+    // Task Labels
+    Route::post('/tasks/{task}/labels', [App\Http\Controllers\TaskController::class, 'syncLabels'])->name('tasks.labels.sync');
+
+    // Task Dependencies
+    Route::post('/tasks/{task}/dependencies', [App\Http\Controllers\TaskController::class, 'addDependency'])->name('tasks.dependencies.store');
+    Route::delete('/tasks/{task}/dependencies/{dependency}', [App\Http\Controllers\TaskController::class, 'removeDependency'])->name('tasks.dependencies.destroy');
+
     Route::get('/projects/{project}/chat/messages', [ProjectChatController::class, 'index'])->name('projects.chat.messages');
     Route::post('/projects/{project}/chat/messages', [ProjectChatController::class, 'store'])->name('projects.chat.store');
 

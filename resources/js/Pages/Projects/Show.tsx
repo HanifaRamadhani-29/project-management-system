@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { PageProps, Project } from '@/types';
+import { Head, Link, useForm, router } from '@inertiajs/react';
+import { PageProps } from '@/types';
+import { Project } from '@/types/project';
 import DangerButton from '@/Components/DangerButton';
 import { ArrowLeft, BriefcaseBusiness, CalendarDays, CheckCircle2, FileText, Pencil, Trash2, Users } from 'lucide-react';
 
@@ -40,7 +41,7 @@ const formatDate = (value: string | null) => {
     }).format(date);
 };
 
-export default function Show({ project, users = [] }: PageProps<{ project: Project; users?: { id: number; name: string; email?: string }[] }>) {
+export default function Show({ project, users = [], taskCounts = { todo: 0, in_progress: 0, done: 0 } }: PageProps<{ project: Project; users?: { id: number; name: string; email?: string }[]; taskCounts?: { todo: number; in_progress: number; done: number } }>) {
     const { delete: destroy } = useForm();
     const { data, setData, post, processing, errors, reset } = useForm({
         user_id: '',
@@ -48,6 +49,8 @@ export default function Show({ project, users = [] }: PageProps<{ project: Proje
     });
     const members = project.members ?? [];
     const managerName = project.manager?.name ?? 'Unassigned';
+    const progress = Math.max(0, Math.min(100, Number(project.progress ?? 0)));
+    const isOverdue = Boolean(project.is_overdue);
 
     const handleDelete = () => {
         if (confirm('Are you sure you want to delete this project?')) {
@@ -62,6 +65,14 @@ export default function Show({ project, users = [] }: PageProps<{ project: Proje
             preserveScroll: true,
             onSuccess: () => reset('user_id'),
         });
+    };
+
+    const handleRemoveMember = (memberId: number) => {
+        if (confirm('Are you sure you want to remove this member?')) {
+            router.delete(route('projects.members.remove', [project.slug, memberId]), {
+                preserveScroll: true,
+            });
+        }
     };
 
     return (
@@ -112,11 +123,18 @@ export default function Show({ project, users = [] }: PageProps<{ project: Proje
                                 </h1>
                             </div>
 
-                            <span
-                                className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${getStatusClass(project.status)}`}
-                            >
-                                {project.status}
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span
+                                    className={`inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold ${getStatusClass(project.status)}`}
+                                >
+                                    {project.status}
+                                </span>
+                                {isOverdue && (
+                                    <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700">
+                                        Overdue
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -195,8 +213,21 @@ export default function Show({ project, users = [] }: PageProps<{ project: Proje
                                     Progress
                                 </p>
                                 <p className="mt-3 text-base font-semibold text-slate-900">
-                                    {project.progress ?? 0}%
+                                    {progress}%
                                 </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                            <div className="mb-2 flex items-center justify-between text-sm font-medium text-slate-700">
+                                <span>Completion</span>
+                                <span>{progress}%</span>
+                            </div>
+                            <div className="h-3 w-full overflow-hidden rounded-full bg-slate-200">
+                                <div
+                                    className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                />
                             </div>
                         </div>
                     </section>
@@ -273,6 +304,28 @@ export default function Show({ project, users = [] }: PageProps<{ project: Proje
                                                 <p className="text-xs text-slate-500">{member.email ?? 'No email available'}</p>
                                             </div>
                                         </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full ${
+                                                (member as any).pivot?.role === 'Super Admin'
+                                                    ? 'bg-emerald-100 text-emerald-700'
+                                                    : (member as any).pivot?.role === 'Project Manager' 
+                                                        ? 'bg-indigo-100 text-indigo-700' 
+                                                        : (member as any).pivot?.role === 'Viewer' 
+                                                            ? 'bg-amber-100 text-amber-700'
+                                                            : 'bg-slate-100 text-slate-600'
+                                            }`}>
+                                                {(member as any).pivot?.role || 'Member'}
+                                            </span>
+                                            {member.id !== project.manager_id && (
+                                                <button
+                                                    onClick={() => handleRemoveMember(member.id)}
+                                                    className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"
+                                                    title="Remove member"
+                                                >
+                                                    <Trash2 className="h-3.5 w-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             ) : (
@@ -297,21 +350,21 @@ export default function Show({ project, users = [] }: PageProps<{ project: Proje
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                                 To Do
                             </p>
-                            <p className="mt-3 text-2xl font-bold text-slate-900">0</p>
+                            <p className="mt-3 text-2xl font-bold text-slate-900">{taskCounts.todo}</p>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                                 In Progress
                             </p>
-                            <p className="mt-3 text-2xl font-bold text-slate-900">0</p>
+                            <p className="mt-3 text-2xl font-bold text-slate-900">{taskCounts.in_progress}</p>
                         </div>
 
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                                 Done
                             </p>
-                            <p className="mt-3 text-2xl font-bold text-slate-900">0</p>
+                            <p className="mt-3 text-2xl font-bold text-slate-900">{taskCounts.done}</p>
                         </div>
                     </div>
 

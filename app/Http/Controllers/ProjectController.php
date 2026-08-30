@@ -24,13 +24,15 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $this->authorize('viewAny', Project::class);
-        $projects = $this->projectService->getAllProjects(auth()->user());
+        $filters = $request->only(['search', 'status']);
+        $projects = $this->projectService->getAllProjects(auth()->user(), $filters);
         
         return inertia('Projects/Index', [
-            'projects' => $projects
+            'projects' => $projects,
+            'filters' => $filters
         ]);
     }
 
@@ -40,7 +42,9 @@ class ProjectController extends Controller
     public function create()
     {
         $this->authorize('create', Project::class);
-        return inertia('Projects/Create');
+        return inertia('Projects/Create', [
+            'users' => User::all()
+        ]);
     }
 
     /**
@@ -61,13 +65,21 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-        $project->load(['members', 'tasks']);
+        $project->load(['members', 'tasks', 'manager']);
         $users = User::all();
+
+        // Task counts for Task Overview
+        $taskCounts = [
+            'todo' => $project->tasks()->whereIn('status', ['backlog', 'todo'])->count(),
+            'in_progress' => $project->tasks()->whereIn('status', ['in_progress', 'review'])->count(),
+            'done' => $project->tasks()->where('status', 'done')->count(),
+        ];
 
         return inertia('Projects/Show', [
             'project' => $project,
             'members' => $project->members,
             'users' => $users,
+            'taskCounts' => $taskCounts,
         ]);
     }
 
@@ -78,7 +90,8 @@ class ProjectController extends Controller
     {
         $this->authorize('update', $project);
         return inertia('Projects/Edit', [
-            'project' => $project
+            'project' => $project,
+            'users' => User::all()
         ]);
     }
 
@@ -149,9 +162,13 @@ class ProjectController extends Controller
     public function removeMember(Project $project, \App\Models\User $member)
     {
         $this->authorize('update', $project);
-        
-        $project->members()->detach($member->id);
-        
-        return redirect()->back()->with('success', 'Member removed successfully.');
+
+        try {
+            $this->projectService->removeMember($project, (int) $member->id);
+
+            return redirect()->back()->with('success', 'Member removed successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 }

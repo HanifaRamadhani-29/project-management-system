@@ -28,7 +28,10 @@ class StoreTaskRequest extends FormRequest
             'status' => ['nullable', 'in:backlog,todo,in_progress,review,done'],
             'priority' => ['required', 'in:low,medium,high,critical'],
             'assignee_id' => ['nullable', 'exists:users,id'],
+            'reporter_id' => ['nullable', 'exists:users,id'],
+            'parent_id' => ['nullable', 'exists:tasks,id'],
             'deadline' => ['nullable', 'date'],
+            'order' => ['nullable', 'integer'],
         ];
     }
 }

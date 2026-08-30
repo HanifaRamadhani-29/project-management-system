@@ -4,12 +4,14 @@ import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import { useEffect, useState } from 'react';
 
-export default function Create() {
+export default function Create({ users = [] }: { users?: any[] }) {
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         description: '',
         status: 'planning',
+        manager_id: '',
         start_date: '',
         deadline: '',
     });
@@ -62,6 +64,25 @@ export default function Create() {
                             </div>
 
                             <div className="mt-4 grid grid-cols-2 gap-4">
+                                <div>
+                                    <InputLabel htmlFor="manager_id" value="Project Manager" />
+                                    <select
+                                        id="manager_id"
+                                        name="manager_id"
+                                        value={data.manager_id}
+                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                                        onChange={(e) => setData('manager_id', e.target.value)}
+                                    >
+                                        <option value="">Select Project Manager</option>
+                                        {users.map((user) => (
+                                            <option key={user.id} value={user.id}>
+                                                {user.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <InputError message={errors.manager_id} className="mt-2" />
+                                </div>
+
                                 <div>
                                     <InputLabel htmlFor="status" value="Status" />
                                     <select

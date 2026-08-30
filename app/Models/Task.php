@@ -15,12 +15,12 @@ class Task extends Model
         'description',
         'status',
         'priority',
-        'order',
-        'deadline',
         'project_id',
         'assignee_id',
         'reporter_id',
         'parent_id',
+        'order',
+        'deadline',
     ];
 
     public function project()
@@ -38,27 +38,7 @@ class Task extends Model
         return $this->belongsTo(User::class, 'reporter_id');
     }
 
-    public function labels()
-    {
-        return $this->belongsToMany(Label::class)->withTimestamps();
-    }
-
-    public function comments()
-    {
-        return $this->hasMany(Comment::class);
-    }
-
-    public function attachments()
-    {
-        return $this->hasMany(Attachment::class);
-    }
-
-    public function approvals()
-    {
-        return $this->hasMany(TaskApproval::class);
-    }
-
-    public function parentTask()
+    public function parent()
     {
         return $this->belongsTo(Task::class, 'parent_id');
     }
@@ -66,6 +46,26 @@ class Task extends Model
     public function subtasks()
     {
         return $this->hasMany(Task::class, 'parent_id');
+    }
+
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class)->withTimestamps();
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    public function approvals()
+    {
+        return $this->hasMany(TaskApproval::class);
     }
 
     public function dependencies()
