@@ -46,10 +46,19 @@ export default function Authenticated({
     if (isSuperAdmin) {
         adminSection.push({ name: "Users", href: route().has("users.index") ? route("users.index") : "/users", icon: Users, active: route().current("users.*") });
         adminSection.push({ name: "Roles & Permissions", href: route().has("roles.permissions.index") ? route("roles.permissions.index") : "/roles/permissions", icon: ShieldCheck, active: route().current("roles.permissions.*") });
+<<<<<<< HEAD
         adminSection.push({ name: "Audit Logs", href: "/audit-logs", icon: History, active: false });
     }
 
 
+=======
+        adminSection.push({ name: "Audit Logs", href: route().has("audit_logs.index") ? route("audit_logs.index") : "/audit-logs", icon: History, active: route().current("audit_logs.*") });
+    }
+
+    if (isSuperAdmin || isPM) {
+        adminSection.push({ name: "Reports", href: "/reports", icon: BarChart3, active: false });
+    }
+>>>>>>> feature/project
 
     // Dynamic role badges
     const getRoleDetails = () => {
