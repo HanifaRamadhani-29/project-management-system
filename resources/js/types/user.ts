@@ -1,7 +1,8 @@
 export interface User {
     id: number;
     name: string;
-    email: string;
+    username: string;
+    email?: string | null;
     role: 'super_admin' | 'project_manager' | 'member' | 'viewer';
     email_verified_at?: string | null;
     created_at: string;

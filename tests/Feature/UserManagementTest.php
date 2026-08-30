@@ -27,6 +27,7 @@ class UserManagementTest extends TestCase
         // Create default users
         $this->admin = User::factory()->create([
             'name' => 'Admin User',
+            'username' => 'admin_user',
             'email' => 'admin@example.com',
             'role' => 'super_admin',
         ]);
@@ -34,6 +35,7 @@ class UserManagementTest extends TestCase
 
         $this->member = User::factory()->create([
             'name' => 'Member User',
+            'username' => 'member_user',
             'email' => 'member@example.com',
             'role' => 'member',
         ]);
@@ -65,6 +67,7 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->post(route('users.store'), [
             'name' => 'New User',
+            'username' => 'newuser',
             'email' => 'newuser@example.com',
             'password' => 'password123',
             'role' => 'project_manager',
@@ -72,12 +75,13 @@ class UserManagementTest extends TestCase
 
         $response->assertRedirect(route('users.index'));
         $this->assertDatabaseHas('users', [
+            'username' => 'newuser',
             'email' => 'newuser@example.com',
             'role' => 'project_manager',
         ]);
 
         // Assert Spatie role is assigned
-        $createdUser = User::where('email', 'newuser@example.com')->first();
+        $createdUser = User::where('username', 'newuser')->first();
         $this->assertTrue($createdUser->hasRole('Project Manager'));
     }
 
@@ -88,6 +92,7 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->put(route('users.update', $this->member->id), [
             'name' => 'Updated Member',
+            'username' => 'updatedmember',
             'email' => 'updatedmember@example.com',
             'role' => 'viewer',
         ]);
@@ -96,6 +101,7 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas('users', [
             'id' => $this->member->id,
             'name' => 'Updated Member',
+            'username' => 'updatedmember',
             'email' => 'updatedmember@example.com',
             'role' => 'viewer',
         ]);
@@ -110,7 +116,8 @@ class UserManagementTest extends TestCase
     {
         $response = $this->actingAs($this->admin)->put(route('users.update', $this->admin->id), [
             'name' => 'Admin User Updated',
-            'email' => 'admin@example.com',
+            'username' => $this->admin->username,
+            'email' => $this->admin->email,
             'role' => 'member',
         ]);
 
