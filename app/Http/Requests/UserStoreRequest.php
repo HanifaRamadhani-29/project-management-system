@@ -23,10 +23,6 @@ class UserStoreRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
-<<<<<<< HEAD
-=======
-            'username' => ['required', 'string', 'max:50', 'unique:users,username', 'alpha_dash'],
->>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'role' => ['required', 'string', 'in:super_admin,project_manager,member,viewer'],

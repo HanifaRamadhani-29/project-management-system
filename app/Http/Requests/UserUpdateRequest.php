@@ -25,10 +25,6 @@ class UserUpdateRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
-<<<<<<< HEAD
-=======
-            'username' => ['required', 'string', 'max:50', 'unique:users,username,' . $userId, 'alpha_dash'],
->>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $userId],
             'role' => ['required', 'string', 'in:super_admin,project_manager,member,viewer'],
         ];

@@ -18,7 +18,6 @@ class TaskOrderService
     public function reorderTasks(int $projectId, string $newStatus, array $orderedTaskIds): void
     {
         DB::transaction(function () use ($projectId, $newStatus, $orderedTaskIds) {
-<<<<<<< HEAD
             // FR-DEP-02: Block drag to "done" if any task has unfinished dependencies
             if ($newStatus === 'done') {
                 $tasks = Task::whereIn('id', $orderedTaskIds)
@@ -38,8 +37,6 @@ class TaskOrderService
                 }
             }
 
-=======
->>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             foreach ($orderedTaskIds as $index => $taskId) {
                 Task::where('id', $taskId)
                     ->where('project_id', $projectId)

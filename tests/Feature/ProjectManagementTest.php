@@ -5,14 +5,9 @@ namespace Tests\Feature;
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
-<<<<<<< HEAD
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia;
 use Spatie\Permission\Models\Role;
-=======
-use Spatie\Permission\Models\Role;
-use Illuminate\Foundation\Testing\RefreshDatabase;
->>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
 use Tests\TestCase;
 
 class ProjectManagementTest extends TestCase
@@ -32,7 +27,6 @@ class ProjectManagementTest extends TestCase
     /**
      * Test Super Admin can manage any project.
      */
-<<<<<<< HEAD
     public function test_project_manager_can_access_user_list_for_selection(): void
     {
         $pm = User::factory()->create([
@@ -58,8 +52,6 @@ class ProjectManagementTest extends TestCase
         );
     }
 
-=======
->>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
     public function test_super_admin_can_manage_any_project(): void
     {
         $admin = User::factory()->create();
