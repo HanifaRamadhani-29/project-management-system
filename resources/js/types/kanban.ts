@@ -1,27 +1,5 @@
 import { User } from './index';
 
-export interface TaskComment {
-    id: number;
-    content: string;
-    user?: User | null;
-    created_at: string;
-}
-
-export interface TaskAttachment {
-    id: number;
-    file_name: string;
-    file_size: number;
-    file_path: string;
-    created_at?: string;
-}
-
-export interface Label {
-    id: number;
-    name: string;
-    slug: string;
-    color: string;
-}
-
 export interface Task {
     id: number;
     project_id: number;
@@ -39,11 +17,6 @@ export interface Task {
     deleted_at?: string | null;
     assignee?: User | null;
     reporter?: User;
-    comments?: TaskComment[];
-    attachments?: TaskAttachment[];
-    labels?: Label[];
-    subtasks?: Task[];
-    dependencies?: Task[];
 }
 
 export interface Column {

@@ -54,6 +54,7 @@ export default function Index({ users, filters }: IndexProps) {
     // Forms using Inertia useForm
     const createForm = useForm({
         name: "",
+        username: "",
         email: "",
         password: "",
         role: "member" as User["role"],
@@ -61,6 +62,7 @@ export default function Index({ users, filters }: IndexProps) {
 
     const editForm = useForm({
         name: "",
+        username: "",
         email: "",
         role: "member" as User["role"],
     });
@@ -181,7 +183,7 @@ export default function Index({ users, filters }: IndexProps) {
                             type="text"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search by name or email address..."
+                            placeholder="Search by name or username..."
                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 focus:bg-white text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 rounded-xl text-sm font-medium transition duration-150"
                         />
                     </div>
@@ -232,7 +234,7 @@ export default function Index({ users, filters }: IndexProps) {
                                                             )}
                                                         </span>
                                                         <span className="text-slate-400 font-medium text-[11px]">
-                                                            {user.email}
+                                                            @{user.username} • {user.email}
                                                         </span>
                                                     </div>
                                                 </div>
@@ -263,7 +265,8 @@ export default function Index({ users, filters }: IndexProps) {
                                                             setSelectedUser(user);
                                                             editForm.setData({
                                                                 name: user.name,
-                                                                email: user.email,
+                                                                username: user.username,
+                                                                email: user.email || "",
                                                                 role: user.role,
                                                             });
                                                             setIsEditOpen(true);
@@ -359,11 +362,24 @@ export default function Index({ users, filters }: IndexProps) {
                                     type="text"
                                     value={createForm.data.name}
                                     onChange={(e) => createForm.setData("name", e.target.value)}
-                                    placeholder="e.g. John Doe"
+                                    placeholder=""
                                     className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
                                 {createForm.errors.name && <p className="mt-1 text-xs text-rose-600 font-bold">{createForm.errors.name}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Username</label>
+                                <input
+                                    type="text"
+                                    value={createForm.data.username}
+                                    onChange={(e) => createForm.setData("username", e.target.value)}
+                                    placeholder=""
+                                    className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                    required
+                                />
+                                {createForm.errors.username && <p className="mt-1 text-xs text-rose-600 font-bold">{createForm.errors.username}</p>}
                             </div>
 
                             <div>
@@ -372,7 +388,7 @@ export default function Index({ users, filters }: IndexProps) {
                                     type="email"
                                     value={createForm.data.email}
                                     onChange={(e) => createForm.setData("email", e.target.value)}
-                                    placeholder="e.g. john@company.com"
+                                    placeholder=""
                                     className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
@@ -385,7 +401,7 @@ export default function Index({ users, filters }: IndexProps) {
                                     type="password"
                                     value={createForm.data.password}
                                     onChange={(e) => createForm.setData("password", e.target.value)}
-                                    placeholder="Minimum 8 characters"
+                                    placeholder=""
                                     className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                                     required
                                 />
@@ -452,6 +468,18 @@ export default function Index({ users, filters }: IndexProps) {
                                     required
                                 />
                                 {editForm.errors.name && <p className="mt-1 text-xs text-rose-600 font-bold">{editForm.errors.name}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Username</label>
+                                <input
+                                    type="text"
+                                    value={editForm.data.username}
+                                    onChange={(e) => editForm.setData("username", e.target.value)}
+                                    className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
+                                    required
+                                />
+                                {editForm.errors.username && <p className="mt-1 text-xs text-rose-600 font-bold">{editForm.errors.username}</p>}
                             </div>
 
                             <div>
@@ -526,7 +554,7 @@ export default function Index({ users, filters }: IndexProps) {
                         </div>
                         <form onSubmit={handleResetPassword} className="p-6 space-y-4">
                             <div className="bg-slate-50 border border-slate-150 p-3.5 rounded-xl text-xs text-slate-600 font-medium">
-                                Account: <strong className="text-slate-800">{selectedUser.name}</strong> ({selectedUser.email})
+                                Account: <strong className="text-slate-800">{selectedUser.name}</strong> (@{selectedUser.username} - {selectedUser.email})
                             </div>
 
                             <div>
@@ -535,7 +563,7 @@ export default function Index({ users, filters }: IndexProps) {
                                     type="password"
                                     value={resetForm.data.password}
                                     onChange={(e) => resetForm.setData("password", e.target.value)}
-                                    placeholder="Enter minimum 8 characters"
+                                    placeholder=""
                                     className="w-full px-3.5 py-2 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500"
                                     required
                                     autoFocus
@@ -579,7 +607,7 @@ export default function Index({ users, filters }: IndexProps) {
                         </div>
                         <div className="p-6 space-y-4">
                             <p className="text-sm text-slate-600 font-medium leading-relaxed">
-                                Are you sure you want to delete the user account for <strong className="text-slate-950 font-bold">{selectedUser.name}</strong> ({selectedUser.email})?
+                                Are you sure you want to delete the user account for <strong className="text-slate-950 font-bold">{selectedUser.name}</strong> (@{selectedUser.username} - {selectedUser.email})?
                                 This action is permanent and cannot be undone. All database entities linked specifically to this profile will lose their references.
                             </p>
 

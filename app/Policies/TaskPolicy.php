@@ -2,14 +2,20 @@
 
 namespace App\Policies;
 
+<<<<<<< HEAD
 use App\Models\Project;
 use App\Models\Task;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
+=======
+use App\Models\Task;
+use App\Models\User;
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
 
 class TaskPolicy
 {
     /**
+<<<<<<< HEAD
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
@@ -73,5 +79,24 @@ class TaskPolicy
         if ($task->reporter_id === $user->id) return true;
         
         return false;
+=======
+     * Perform pre-authorization checks.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        return null;
+    }
+
+    /**
+     * Determine whether the user can update the task.
+     */
+    public function update(User $user, Task $task): bool
+    {
+        return $user->isMemberOf($task->project) || $user->isProjectManager($task->project);
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
     }
 }

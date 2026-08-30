@@ -23,6 +23,7 @@ class UserController extends Controller
         }
     }
 
+<<<<<<< HEAD
     protected function authorizeUserList(): void
     {
         $user = auth()->user();
@@ -31,12 +32,18 @@ class UserController extends Controller
         }
     }
 
+=======
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
     /**
      * Display a listing of users.
      */
     public function index(Request $request): Response
     {
+<<<<<<< HEAD
         $this->authorizeUserList();
+=======
+        $this->authorizeSuperAdmin();
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
 
         $query = User::query();
 
@@ -45,7 +52,11 @@ class UserController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
+<<<<<<< HEAD
                   ->orWhere('email', 'like', "%{$search}%");
+=======
+                  ->orWhere('username', 'like', "%{$search}%");
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             });
         }
 
@@ -73,6 +84,10 @@ class UserController extends Controller
 
         $user = User::create([
             'name' => $validated['name'],
+<<<<<<< HEAD
+=======
+            'username' => $validated['username'],
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'role' => $validated['role'],
@@ -103,6 +118,10 @@ class UserController extends Controller
 
         $user->update([
             'name' => $validated['name'],
+<<<<<<< HEAD
+=======
+            'username' => $validated['username'],
+>>>>>>> bb195537a83faecd4dce9183ecbecb7674323a83
             'email' => $validated['email'],
             'role' => $validated['role'],
         ]);

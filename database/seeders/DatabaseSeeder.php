@@ -90,71 +90,41 @@ class DatabaseSeeder extends Seeder
             $pm->id => ['role' => 'manager'],
             $member->id => ['role' => 'member'],
         ]);
+                // 2. Seed Default User Accounts
+        $admin = User::create([
+            'name' => 'Super Admin',
+            'username' => 'admin',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'super_admin',
+        ]);
+        $admin->assignRole('Super Admin');
 
-        $tasks = [
-            [
-                'title' => 'User login flow',
-                'description' => 'Implement authentication and login screen for mobile users.',
-                'status' => 'backlog',
-                'priority' => 'high',
-                'assignee_id' => $member->id,
-                'reporter_id' => $pm->id,
-                'deadline' => now()->addDays(3)->toDateString(),
-                'order' => 0,
-            ],
-            [
-                'title' => 'Dashboard widgets',
-                'description' => 'Create summary cards and project overview for the mobile dashboard.',
-                'status' => 'todo',
-                'priority' => 'medium',
-                'assignee_id' => $member->id,
-                'reporter_id' => $pm->id,
-                'deadline' => now()->addDays(6)->toDateString(),
-                'order' => 0,
-            ],
-            [
-                'title' => 'Task detail screen',
-                'description' => 'Build task details and edit flow for project activity.',
-                'status' => 'in_progress',
-                'priority' => 'high',
-                'assignee_id' => $member->id,
-                'reporter_id' => $pm->id,
-                'deadline' => now()->addDays(8)->toDateString(),
-                'order' => 0,
-            ],
-            [
-                'title' => 'QA review',
-                'description' => 'Run regression and acceptance checks on the current release candidate.',
-                'status' => 'review',
-                'priority' => 'medium',
-                'assignee_id' => $admin->id,
-                'reporter_id' => $pm->id,
-                'deadline' => now()->addDays(10)->toDateString(),
-                'order' => 0,
-            ],
-            [
-                'title' => 'Production release',
-                'description' => 'Finalize release notes and signoff for the mobile app launch.',
-                'status' => 'done',
-                'priority' => 'low',
-                'assignee_id' => $admin->id,
-                'reporter_id' => $pm->id,
-                'deadline' => now()->addDays(12)->toDateString(),
-                'order' => 0,
-            ],
-        ];
+        $pm = User::create([
+            'name' => 'Project Manager',
+            'username' => 'pm',
+            'email' => 'pm@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'project_manager',
+        ]);
+        $pm->assignRole('Project Manager');
 
-        foreach ($tasks as $taskData) {
-            Task::firstOrCreate(
-                [
-                    'project_id' => $project->id,
-                    'title' => $taskData['title'],
-                ],
-                [
-                    ...$taskData,
-                    'project_id' => $project->id,
-                ]
-            );
-        }
+        $member = User::create([
+            'name' => 'Team Member',
+            'username' => 'member',
+            'email' => 'member@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'member',
+        ]);
+        $member->assignRole('Member');
+
+        $viewer = User::create([
+            'name' => 'Viewer User',
+            'username' => 'viewer',
+            'email' => 'viewer@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'viewer',
+        ]);
+        $viewer->assignRole('Viewer');
     }
 }
