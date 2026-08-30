@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Project;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -28,7 +29,7 @@ class ProjectFactory extends Factory
             'description' => $this->faker->sentence(),
             'start_date' => now()->format('Y-m-d'),
             'deadline' => now()->addMonths(2)->format('Y-m-d'),
-            'manager_id' => null,
+            'manager_id' => User::factory(),
         ];
     }
 }

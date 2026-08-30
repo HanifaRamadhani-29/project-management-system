@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('manager_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('status');
+            $table->string('status')->default('Planning');
             $table->text('description')->nullable();
             $table->date('start_date')->nullable();
             $table->date('deadline')->nullable();
+            $table->foreignId('manager_id')->constrained('users')->cascadeOnDelete();
             $table->timestamps();
         });
     }

@@ -147,21 +147,16 @@ class UserController extends Controller
      */
     protected function syncSpatieRole(User $user, string $role): void
     {
-        $user->syncRoles([]); // Clear previous roles
+        $spatieRole = match ($role) {
+            'super_admin' => 'Super Admin',
+            'project_manager' => 'Project Manager',
+            'member' => 'Member',
+            'viewer' => 'Viewer',
+            default => null,
+        };
 
-        switch ($role) {
-            case 'super_admin':
-                $user->assignRole('Super Admin');
-                break;
-            case 'project_manager':
-                $user->assignRole('Project Manager');
-                break;
-            case 'member':
-                $user->assignRole('Member');
-                break;
-            case 'viewer':
-                $user->assignRole('Viewer');
-                break;
+        if ($spatieRole) {
+            $user->syncRoles($spatieRole);
         }
     }
 }

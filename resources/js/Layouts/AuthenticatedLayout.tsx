@@ -1,4 +1,4 @@
-import React, { useState, PropsWithChildren, ReactNode } from "react";
+import React, { useState, useEffect, PropsWithChildren, ReactNode } from "react";
 import { Link, usePage } from "@inertiajs/react";
 import { 
     LayoutDashboard, 
@@ -25,6 +25,21 @@ export default function Authenticated({
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [showingUserDropdown, setShowingUserDropdown] = useState(false);
 
+    const { flash } = usePage().props as any;
+    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+    useEffect(() => {
+        if (flash?.success) {
+            setNotification({ message: flash.success, type: 'success' });
+            const timer = setTimeout(() => setNotification(null), 3000);
+            return () => clearTimeout(timer);
+        } else if (flash?.error) {
+            setNotification({ message: flash.error, type: 'error' });
+            const timer = setTimeout(() => setNotification(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [flash]);
+
     const isSuperAdmin = user?.role === 'super_admin' || (user?.roles && user.roles.includes("Super Admin"));
     const isPM = user?.role === 'project_manager' || (user?.roles && user.roles.includes("Project Manager"));
 
@@ -35,21 +50,25 @@ export default function Authenticated({
         { name: "My Tasks", href: "/tasks", icon: CheckSquare, active: false },
     ];
 
-    // Workflow section menu items
     const workflowSection = [
-        { name: "Approvals", href: "/approvals", icon: CheckCircle2, active: false },
+        { name: "Approvals", href: route().has("approvals.index") ? route("approvals.index") : "/approvals", icon: CheckCircle2, active: route().current("approvals.*") },
         { name: "Notifications", href: "/notifications", icon: Bell, active: false },
     ];
 
+    const hasPermission = (perm: string) => 
+        user?.role === 'super_admin' || user?.permissions?.includes(perm);
+
     // Administration section menu items
     const adminSection: { name: string; href: string; icon: any; active: boolean }[] = [];
-    if (isSuperAdmin) {
+    if (hasPermission('users.manage')) {
         adminSection.push({ name: "Users", href: route().has("users.index") ? route("users.index") : "/users", icon: Users, active: route().current("users.*") });
-        adminSection.push({ name: "Roles & Permissions", href: route().has("roles.permissions.index") ? route("roles.permissions.index") : "/roles/permissions", icon: ShieldCheck, active: route().current("roles.permissions.*") });
-        adminSection.push({ name: "Audit Logs", href: "/audit-logs", icon: History, active: false });
     }
-
-
+    if (user?.role === 'super_admin') {
+        adminSection.push({ name: "Roles & Permissions", href: route().has("roles.permissions.index") ? route("roles.permissions.index") : "/roles/permissions", icon: ShieldCheck, active: route().current("roles.permissions.*") });
+    }
+    if (hasPermission('audit_logs.view')) {
+        adminSection.push({ name: "Audit Logs", href: route().has("audit_logs.index") ? route("audit_logs.index") : "/audit-logs", icon: History, active: route().current("audit_logs.*") });
+    }
 
     // Dynamic role badges
     const getRoleDetails = () => {
@@ -285,7 +304,17 @@ export default function Authenticated({
                 </header>
 
                 {/* Main Content Pane */}
-                <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+                <main className="flex-1 p-6 md:p-8 overflow-y-auto relative">
+                    {notification && (
+                        <div className={`fixed top-4 right-4 z-[9999] flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg border text-sm font-semibold transition-all duration-300 ${
+                            notification.type === 'success' 
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+                                : 'bg-rose-50 border-rose-200 text-rose-800'
+                        }`}>
+                            <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+                            {notification.message}
+                        </div>
+                    )}
                     {children}
                 </main>
             </div>
