@@ -75,7 +75,11 @@ class ProjectPolicy
      */
     public function before(User $user, string $ability): ?bool
     {
+<<<<<<< HEAD
+        if ($user->role === 'super_admin' || $user->hasRole('Super Admin')) {
+=======
         if ($user->role === 'super_admin' || (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin())) {
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
             return true;
         }
         return null;
@@ -103,8 +107,12 @@ class ProjectPolicy
      */
     public function create(User $user): bool
     {
+<<<<<<< HEAD
+        return $user->role === 'super_admin' || $user->can('projects.create');
+=======
         return $user->role === 'super_admin' 
             || $user->role === 'project_manager';
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     }
 
     /**
@@ -112,7 +120,11 @@ class ProjectPolicy
      */
     public function update(User $user, Project $project): bool
     {
+<<<<<<< HEAD
+        return $user->role === 'super_admin' || ($user->can('projects.edit') && $project->manager_id === $user->id);
+=======
         return $user->id === $project->manager_id;
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     }
 
     /**
@@ -120,7 +132,19 @@ class ProjectPolicy
      */
     public function delete(User $user, Project $project): bool
     {
+<<<<<<< HEAD
+        return $user->role === 'super_admin' || $user->can('projects.delete');
+    }
+
+    /**
+     * Determine whether the user can manage project members.
+     */
+    public function manageMembers(User $user, Project $project): bool
+    {
+        return $user->role === 'super_admin' || ($user->can('projects.manage_members') && $project->manager_id === $user->id);
+=======
         return $user->id === $project->manager_id;
 >>>>>>> feature/project
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     }
 }

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { Head, useForm } from "@inertiajs/react";
-import { CheckSquare, Save, ShieldAlert, Info } from "lucide-react";
+import { Head, router } from "@inertiajs/react";
+import { CheckSquare, ShieldAlert, Info, RefreshCw } from "lucide-react";
 
 interface PermissionItem {
     id: number;
@@ -21,22 +21,18 @@ interface PermissionsProps {
 }
 
 export default function Permissions({ roles, permissions_grouped }: PermissionsProps) {
-    // Exclude Super Admin from editable matrix map, but list it for display purposes
     const editableRoles = roles.filter(role => role.name !== "Super Admin");
-    const superAdminRole = roles.find(role => role.name === "Super Admin");
 
     // Initialize state mapping role name -> array of permission names
     const [matrix, setMatrix] = useState<Record<string, string[]>>(() => {
         const initialMatrix: Record<string, string[]> = {};
-        editableRoles.forEach(role => {
+        roles.forEach(role => {
             initialMatrix[role.name] = [...(role.permission_names || [])];
         });
         return initialMatrix;
     });
 
-    const form = useForm({
-        matrix: matrix,
-    });
+    const [isSaving, setIsSaving] = useState<string | null>(null);
 
     const handleCheckboxChange = (roleName: string, permissionName: string, isChecked: boolean) => {
         const currentPermissions = matrix[roleName] || [];
@@ -48,29 +44,41 @@ export default function Permissions({ roles, permissions_grouped }: PermissionsP
             updatedPermissions = currentPermissions.filter(name => name !== permissionName);
         }
 
+        // Optimistic State Update
         const newMatrix = {
             ...matrix,
             [roleName]: updatedPermissions,
         };
-
         setMatrix(newMatrix);
-        form.setData("matrix", newMatrix);
-    };
+        setIsSaving(roleName);
 
-    const submit = (e: React.FormEvent) => {
-        e.preventDefault();
-        form.post(route("roles.permissions.update"), {
+        // Auto-save via POST request
+        router.post(route("roles.permissions.update"), {
+            role: roleName,
+            permissions: updatedPermissions,
+        }, {
             preserveScroll: true,
+            onFinish: () => {
+                setIsSaving(null);
+            }
         });
     };
 
     return (
         <AuthenticatedLayout
             header={
-                <h2 className="text-xl font-bold leading-tight text-slate-800 tracking-tight flex items-center gap-2">
-                    <CheckSquare className="w-5 h-5 text-indigo-600" />
-                    Access Control Matrix
-                </h2>
+                <div className="flex items-center justify-between w-full">
+                    <h2 className="text-xl font-bold leading-tight text-slate-800 tracking-tight flex items-center gap-2">
+                        <CheckSquare className="w-5 h-5 text-indigo-600" />
+                        Access Control Matrix
+                    </h2>
+                    {isSaving && (
+                        <div className="flex items-center gap-1.5 text-xs text-indigo-600 font-semibold bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full shadow-sm animate-pulse">
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            Updating {isSaving}...
+                        </div>
+                    )}
+                </div>
             }
         >
             <Head title="Roles & Permissions" />
@@ -97,8 +105,8 @@ export default function Permissions({ roles, permissions_grouped }: PermissionsP
                     </div>
                 </div>
 
-                {/* 3. Matrix Checkbox Grid Form */}
-                <form onSubmit={submit} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                {/* 3. Matrix Checkbox Grid */}
+                <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-xs font-semibold text-slate-650 min-w-[700px]">
                             <thead>
@@ -158,8 +166,9 @@ export default function Permissions({ roles, permissions_grouped }: PermissionsP
                                                             <input
                                                                 type="checkbox"
                                                                 checked={isChecked}
+                                                                disabled={isSaving !== null}
                                                                 onChange={(e) => handleCheckboxChange(role.name, perm.name, e.target.checked)}
-                                                                className="rounded border-slate-300 bg-white text-indigo-600 focus:ring-indigo-500 w-4.5 h-4.5 transition cursor-pointer"
+                                                                className="rounded border-slate-300 bg-white text-indigo-600 focus:ring-indigo-500 w-4.5 h-4.5 transition cursor-pointer disabled:opacity-50"
                                                             />
                                                         </td>
                                                     );
@@ -172,22 +181,14 @@ export default function Permissions({ roles, permissions_grouped }: PermissionsP
                         </table>
                     </div>
 
-                    {/* Submit Bar */}
+                    {/* Bottom Info Bar */}
                     <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
                         <div className="text-xs text-slate-400 font-semibold flex items-center gap-1.5">
                             <Info className="w-4 h-4 text-slate-350" />
-                            Click checkboxes above and click Save Changes to apply system updates.
+                            Changes are auto-saved on toggle. Click checkboxes above to update role access control.
                         </div>
-                        <button
-                            type="submit"
-                            disabled={form.processing}
-                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition shadow-md shadow-indigo-600/20 disabled:opacity-50"
-                        >
-                            <Save className="w-4 h-4" />
-                            {form.processing ? "Saving Matrix..." : "Save Changes"}
-                        </button>
                     </div>
-                </form>
+                </div>
             </div>
         </AuthenticatedLayout>
     );

@@ -15,6 +15,32 @@ use Inertia\Inertia;
 class ProjectController extends Controller
 {
     use AuthorizesRequests;
+<<<<<<< HEAD
+
+    protected $projectService;
+
+    public function __construct(ProjectService $projectService)
+    {
+        $this->projectService = $projectService;
+    }
+
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $projects = Project::with(['manager', 'members'])
+            ->withCount(['tasks', 'tasks as completed_tasks_count' => function ($q) {
+                $q->where('status', 'done');
+            }])
+            ->latest()
+            ->paginate(9);
+
+        return Inertia::render('Projects/Index', [
+            'projects' => $projects,
+            'filters'  => $request->only(['search', 'status']),
+            'users'    => User::select('id', 'name', 'email', 'role')->get(),
+=======
 
     protected $projectService;
 
@@ -66,6 +92,7 @@ class ProjectController extends Controller
             'projects' => $projects,
             'filters' => $request->only(['search', 'status']),
 >>>>>>> feature/project
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         ]);
     }
 
@@ -85,6 +112,13 @@ class ProjectController extends Controller
      */
     public function store(StoreProjectRequest $request)
     {
+<<<<<<< HEAD
+        if (auth()->user()->role === 'member' || auth()->user()->role === 'viewer') {
+            abort(403, 'Unauthorized action. Members cannot create projects.');
+        }
+
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $this->authorize('create', Project::class);
         $project = $this->projectService->createProject($request->validated(), auth()->user());
         
@@ -99,14 +133,20 @@ class ProjectController extends Controller
         $this->authorize('view', $project);
 
 <<<<<<< HEAD
+=======
+<<<<<<< HEAD
         $project->load(['members', 'tasks', 'manager']);
 =======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $relations = ['members'];
         if (class_exists('App\Models\Task')) {
             $relations[] = 'tasks';
         }
         $project->load($relations);
+<<<<<<< HEAD
+=======
 >>>>>>> feature/project
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $users = User::all();
 
         // Task counts for Task Overview

@@ -32,10 +32,19 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
-                // Tambahkan ini agar React tahu role user yang sedang login
+                'user' => $request->user() ? [
+                    'id' => $request->user()->id,
+                    'name' => $request->user()->name,
+                    'email' => $request->user()->email,
+                    'role' => $request->user()->role,
+                    'permissions' => $request->user()->getAllPermissions()->pluck('name')->toArray(),
+                ] : null,
                 'roles' => $request->user() ? $request->user()->getRoleNames() : [],
-                'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name') : [],
+                'permissions' => $request->user() ? $request->user()->getAllPermissions()->pluck('name')->toArray() : [],
+            ],
+            'flash' => [
+                'success' => $request->session()->get('success'),
+                'error' => $request->session()->get('error'),
             ],
         ];
     }

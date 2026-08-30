@@ -87,10 +87,12 @@ class AuthAndAuthorizationTest extends TestCase
      */
     public function test_unauthenticated_user_redirected_to_login(): void
     {
+        $pm = User::factory()->create();
         $project = Project::create([
             'name' => 'Project X',
             'slug' => 'project-x',
             'status' => 'active',
+            'manager_id' => $pm->id,
         ]);
 
         $response = $this->get(route('projects.show', $project->slug));
@@ -133,5 +135,36 @@ class AuthAndAuthorizationTest extends TestCase
 
         $response->assertRedirect('/projects');
         $this->assertDatabaseMissing('projects', ['id' => $project->id]);
+    }
+
+    public function test_super_admin_can_update_role_permissions_via_post_single_role(): void
+    {
+        $this->artisan('db:seed', ['--class' => 'PermissionSeeder']);
+
+        $admin = User::factory()->create(['role' => 'super_admin']);
+        $admin->assignRole('Super Admin');
+
+        $response = $this->actingAs($admin)
+            ->post(route('roles.permissions.update'), [
+                'role' => 'Member',
+                'permissions' => ['tasks.change_status', 'comments.create'],
+            ]);
+
+        $response->assertRedirect();
+        
+        $memberRole = \Spatie\Permission\Models\Role::findByName('Member');
+        $this->assertTrue($memberRole->hasPermissionTo('tasks.change_status'));
+        $this->assertTrue($memberRole->hasPermissionTo('comments.create'));
+        $this->assertFalse($memberRole->hasPermissionTo('files.upload'));
+    }
+
+    public function test_unauthorized_user_cannot_access_roles_permissions_matrix(): void
+    {
+        $member = User::factory()->create(['role' => 'member']);
+
+        $response = $this->actingAs($member)
+            ->get(route('roles.permissions.index'));
+
+        $response->assertStatus(403);
     }
 }

@@ -16,6 +16,11 @@ interface TaskDetailPanelProps {
 export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, allLabels = [], allProjectTasks = [], users = [] }: TaskDetailPanelProps) {
     const { auth } = usePage().props as any;
     const currentUser = auth.user;
+<<<<<<< HEAD
+    const hasPermission = (perm: string) => 
+        currentUser?.role === 'super_admin' || currentUser?.permissions?.includes(perm);
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     const commentsEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -131,6 +136,78 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
         });
     };
 
+<<<<<<< HEAD
+    const handleDeleteAttachment = (attachmentId: number) => {
+        if (confirm('Apakah Anda yakin ingin menghapus file ini?')) {
+            router.delete(route('attachments.destroy', attachmentId), {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    // Approval Workflow state & handlers
+    const [showSubmitModal, setShowSubmitModal] = useState(false);
+    const [submitNote, setSubmitNote] = useState('');
+    const [showRevisionModal, setShowRevisionModal] = useState(false);
+    const [revisionFeedback, setRevisionFeedback] = useState('');
+
+    const canApprove = currentUser?.role === 'super_admin' || 
+                        auth.roles?.includes('Super Admin') || 
+                        auth.permissions?.includes('tasks.approve');
+
+    const handleSubmitReview = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!task) return;
+        router.post(route('tasks.submit-review', task.id), {
+            note: submitNote
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowSubmitModal(false);
+                setSubmitNote('');
+            }
+        });
+    };
+
+    const handleApprove = () => {
+        if (!task) return;
+        if (confirm('Apakah Anda yakin ingin menyetujui tugas ini?')) {
+            router.post(route('tasks.approve', task.id), {}, {
+                preserveScroll: true
+            });
+        }
+    };
+
+    const handleRevision = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!task) return;
+        if (!revisionFeedback.trim()) {
+            alert('Catatan revisi wajib diisi!');
+            return;
+        }
+        router.post(route('tasks.revision', task.id), {
+            feedback: revisionFeedback
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setShowRevisionModal(false);
+                setRevisionFeedback('');
+            }
+        });
+    };
+
+    const handleDeleteTask = () => {
+        if (!task) return;
+        if (confirm('Apakah Anda yakin ingin menghapus tugas ini?')) {
+            router.delete(route('tasks.destroy', [projectSlug, task.id]), {
+                preserveScroll: true,
+                onSuccess: () => onClose(),
+            });
+        }
+    };
+
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     const formatPriority = (priority: string) => {
         switch (priority) {
             case 'critical': return <span className="px-2 py-1 rounded bg-rose-100 text-rose-700 text-xs font-bold uppercase">Critical</span>;
@@ -150,6 +227,10 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
     const subtasks = task?.subtasks || [];
     const dependencies = task?.dependencies || [];
     const labels = task?.labels || [];
+<<<<<<< HEAD
+    const approvals = task?.approvals || [];
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 
     // Local State for forms
     const [subtaskTitle, setSubtaskTitle] = useState('');
@@ -216,6 +297,18 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                     <div className="flex items-center gap-3">
                         <span className="text-sm font-bold text-slate-400">#{task.id}</span>
                         {formatStatus(task.status)}
+<<<<<<< HEAD
+                        {hasPermission('tasks.delete') && (
+                            <button
+                                onClick={handleDeleteTask}
+                                className="p-1 text-slate-400 hover:text-rose-650 hover:bg-rose-50 rounded-lg transition"
+                                title="Delete Task"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                     </div>
                     <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition">
                         <X className="w-5 h-5" />
@@ -226,6 +319,52 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                 <div className="flex-1 overflow-y-auto">
                     <div className="p-6 space-y-8">
                         
+<<<<<<< HEAD
+                        {/* Approval Action Banner */}
+                        {task.status === 'in_progress' && (
+                            <div className="p-4 bg-indigo-50 border border-indigo-150 rounded-xl flex items-center justify-between">
+                                <div>
+                                    <h4 className="text-sm font-bold text-indigo-900">Task In Progress</h4>
+                                    <p className="text-xs text-indigo-700">Submit this task for project manager review once finished.</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowSubmitModal(true)}
+                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
+                                >
+                                    🚀 Submit for Review
+                                </button>
+                            </div>
+                        )}
+
+                        {task.status === 'review' && (
+                            <div className="p-4 bg-amber-50 border border-amber-150 rounded-xl">
+                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-amber-900">Under Review</h4>
+                                        <p className="text-xs text-amber-700">This task is pending approval from a Project Manager or Super Admin.</p>
+                                    </div>
+                                    {canApprove && (
+                                        <div className="flex gap-2 shrink-0">
+                                            <button
+                                                onClick={handleApprove}
+                                                className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
+                                            >
+                                                ✅ Approve Task
+                                            </button>
+                                            <button
+                                                onClick={() => setShowRevisionModal(true)}
+                                                className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-lg shadow-sm transition"
+                                            >
+                                                ⚠️ Request Revision
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                         {/* Title & Description */}
                         <div className="space-y-4">
                             <h2 className="text-2xl font-bold text-slate-800">{task.title}</h2>
@@ -361,12 +500,23 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                     <Paperclip className="w-4 h-4 text-slate-500" />
                                     Attachments
                                 </h3>
+<<<<<<< HEAD
+                                {hasPermission('files.upload') && (
+                                    <form id="attachment-form" onSubmit={submitAttachment}>
+                                        <label className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition">
+                                            + Add File
+                                            <input type="file" className="hidden" onChange={handleFileUpload} />
+                                        </label>
+                                    </form>
+                                )}
+=======
                                 <form id="attachment-form" onSubmit={submitAttachment}>
                                     <label className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition">
                                         + Add File
                                         <input type="file" className="hidden" onChange={handleFileUpload} />
                                     </label>
                                 </form>
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                             </div>
                             
                             {attachments.length > 0 ? (
@@ -383,9 +533,22 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1">
+<<<<<<< HEAD
+                                                <a href={route('attachments.download', file.id)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                                                    <Download className="w-4 h-4" />
+                                                </a>
+                                                <button
+                                                    onClick={() => handleDeleteAttachment(file.id)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                                    title="Hapus Attachment"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+=======
                                                 <a href={`/storage/${file.file_path}`} download className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
                                                     <Download className="w-4 h-4" />
                                                 </a>
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                                             </div>
                                         </div>
                                     ))}
@@ -395,6 +558,63 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                             )}
                         </div>
 
+<<<<<<< HEAD
+                        {/* Approval History Section */}
+                        {approvals.length > 0 && (
+                            <div className="space-y-4">
+                                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">
+                                    <Clock className="w-4 h-4 text-slate-500" />
+                                    Approval History
+                                </h3>
+                                <div className="flow-root">
+                                    <ul className="-mb-8">
+                                        {approvals.map((approval: any, index: number) => (
+                                            <li key={approval.id}>
+                                                <div className="relative pb-8">
+                                                    {index !== approvals.length - 1 && (
+                                                        <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-slate-200" aria-hidden="true" />
+                                                    )}
+                                                    <div className="relative flex space-x-3">
+                                                        <div>
+                                                            <span className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-slate-50 ${
+                                                                approval.status === 'Approved' ? 'bg-emerald-100 text-emerald-800' :
+                                                                approval.status === 'Revision Required' ? 'bg-amber-100 text-amber-800' :
+                                                                'bg-blue-100 text-blue-800'
+                                                            }`}>
+                                                                {approval.status === 'Approved' ? '✓' : approval.status === 'Revision Required' ? '⚠' : '?' }
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
+                                                            <div>
+                                                                <p className="text-xs text-slate-600">
+                                                                    Status: <span className="font-bold">{approval.status}</span>
+                                                                </p>
+                                                                <p className="text-xs text-slate-500 mt-1">
+                                                                    Submitted by <span className="font-semibold text-slate-700">{approval.requested_by?.name || 'Unknown User'}</span>
+                                                                    {approval.note && <span>: "{approval.note}"</span>}
+                                                                </p>
+                                                                {approval.reviewed_by && (
+                                                                    <p className="text-xs text-slate-500 mt-1">
+                                                                        Reviewed by <span className="font-semibold text-slate-700">{approval.reviewed_by?.name || 'Unknown PM'}</span>
+                                                                        {approval.feedback && <span className="text-amber-700 block mt-0.5 font-medium">Feedback: "{approval.feedback}"</span>}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-right text-[10px] whitespace-nowrap text-slate-400">
+                                                                <time dateTime={approval.created_at}>{new Date(approval.created_at).toLocaleDateString()}</time>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        )}
+
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                         {/* Comments Section */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">
@@ -458,14 +678,25 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                 type="text"
                                 value={commentData.content}
                                 onChange={handleCommentChange}
+<<<<<<< HEAD
+                                placeholder={hasPermission('comments.create') ? "Write a comment... (Type @ to mention)" : "You do not have permission to post comments"}
+                                className="w-full text-sm border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-4 py-2 disabled:bg-slate-100 disabled:text-slate-400"
+                                required
+                                disabled={!hasPermission('comments.create')}
+=======
                                 placeholder="Write a comment... (Type @ to mention)"
                                 className="w-full text-sm border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-4 py-2"
                                 required
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                             />
                         </div>
                         <button
                             type="submit"
+<<<<<<< HEAD
+                            disabled={processingComment || !commentData.content.trim() || !hasPermission('comments.create')}
+=======
                             disabled={processingComment || !commentData.content.trim()}
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                             className="p-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl shadow-sm transition"
                         >
                             <Send className="w-4 h-4" />
@@ -473,6 +704,80 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                     </form>
                 </div>
 
+<<<<<<< HEAD
+            {/* Submit for Review Modal */}
+            {showSubmitModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+                    <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">🚀 Submit for Review</h3>
+                        <form onSubmit={handleSubmitReview} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Submission Note (Optional)</label>
+                                <textarea
+                                    className="w-full text-sm border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-4 py-2 h-24"
+                                    value={submitNote}
+                                    onChange={(e) => setSubmitNote(e.target.value)}
+                                    placeholder="Add notes about your work..."
+                                />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSubmitModal(false)}
+                                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl transition"
+                                >
+                                    Submit
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Request Revision Modal */}
+            {showRevisionModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
+                    <div className="bg-white border border-slate-200 shadow-xl rounded-2xl p-6 max-w-md w-full mx-4">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">⚠️ Request Revision</h3>
+                        <form onSubmit={handleRevision} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Revision Feedback (Required)</label>
+                                <textarea
+                                    className="w-full text-sm border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-4 py-2 h-24"
+                                    value={revisionFeedback}
+                                    onChange={(e) => setRevisionFeedback(e.target.value)}
+                                    placeholder="Explain what needs to be changed..."
+                                    required
+                                />
+                            </div>
+                            <div className="flex justify-end gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowRevisionModal(false)}
+                                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl transition"
+                                >
+                                    Request Revision
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
             </div>
         </div>
     );

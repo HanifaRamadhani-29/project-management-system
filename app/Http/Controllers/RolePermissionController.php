@@ -66,33 +66,45 @@ class RolePermissionController extends Controller
     /**
      * Update permissions matrix for roles.
      */
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request): mixed
     {
         $this->authorizeSuperAdmin();
 
-        $validated = $request->validate([
-            'matrix' => ['required', 'array'],
-            'matrix.*' => ['nullable', 'array'],
-            'matrix.*.*' => ['string', 'exists:permissions,name'],
-        ]);
-
-        $matrix = $validated['matrix'];
-
-        foreach ($matrix as $roleName => $permissionNames) {
-            // Safety guard: Prevent Super Admin demotion/lockout via permissions panel
-            if ($roleName === 'Super Admin') {
-                continue;
+        if ($request->has('role')) {
+            // Guard lockout
+            if ($request->role === 'Super Admin') {
+                return redirect()->route('roles.permissions.index')->with('error', 'Super Admin permissions cannot be modified.');
             }
 
-            $role = Role::where('name', $roleName)->first();
+            $role = \Spatie\Permission\Models\Role::findByName($request->role);
             if ($role) {
-                $role->syncPermissions($permissionNames ?? []);
+                $role->syncPermissions($request->permissions ?? []);
             }
+            
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions(); // Reset cache permission
+            return redirect()->route('roles.permissions.index')->with('success', 'Permissions updated');
         }
 
-        // Forget cached permissions to apply changes instantly
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        // Support matrix format for tests
+        if ($request->has('matrix')) {
+            $matrix = $request->input('matrix');
 
-        return redirect()->route('roles.permissions.index')->with('success', 'Roles and permissions matrix updated successfully.');
+            foreach ($matrix as $roleName => $permissionNames) {
+                if ($roleName === 'Super Admin') {
+                    continue;
+                }
+
+                $role = Role::where('name', $roleName)->first();
+                if ($role) {
+                    $role->syncPermissions($permissionNames ?? []);
+                }
+            }
+
+            app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+            return redirect()->route('roles.permissions.index')->with('success', 'Permissions updated');
+        }
+
+        return redirect()->route('roles.permissions.index')->with('error', 'Invalid payload.');
     }
 }

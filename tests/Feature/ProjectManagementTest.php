@@ -18,10 +18,8 @@ class ProjectManagementTest extends TestCase
     {
         parent::setUp();
         
-        // Seed Spatie roles
-        Role::firstOrCreate(['name' => 'Super Admin']);
-        Role::firstOrCreate(['name' => 'Project Manager']);
-        Role::firstOrCreate(['name' => 'Member']);
+        // Seed Spatie roles & permissions
+        $this->artisan('db:seed', ['--class' => 'PermissionSeeder']);
     }
 
     /**
@@ -54,10 +52,10 @@ class ProjectManagementTest extends TestCase
 
     public function test_super_admin_can_manage_any_project(): void
     {
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['role' => 'super_admin']);
         $admin->assignRole('Super Admin');
 
-        $pm = User::factory()->create();
+        $pm = User::factory()->create(['role' => 'project_manager']);
         $pm->assignRole('Project Manager');
 
         // Create project
@@ -187,5 +185,35 @@ class ProjectManagementTest extends TestCase
 
         $this->assertEquals(50, $project->progress);
         $this->assertTrue($project->is_overdue);
+    }
+
+    public function test_member_and_viewer_cannot_create_project_returns_403(): void
+    {
+        $member = User::factory()->create(['role' => 'member']);
+        $viewer = User::factory()->create(['role' => 'viewer']);
+
+        $response = $this->actingAs($member)
+            ->post(route('projects.store'), [
+                'name' => 'Member Project',
+                'description' => 'A project that should not be created',
+                'status' => 'planning',
+                'start_date' => now()->format('Y-m-d'),
+                'end_date' => now()->addMonth()->format('Y-m-d'),
+                'manager_id' => $member->id,
+            ]);
+
+        $response->assertStatus(403);
+
+        $responseViewer = $this->actingAs($viewer)
+            ->post(route('projects.store'), [
+                'name' => 'Viewer Project',
+                'description' => 'A project that should not be created',
+                'status' => 'planning',
+                'start_date' => now()->format('Y-m-d'),
+                'end_date' => now()->addMonth()->format('Y-m-d'),
+                'manager_id' => $viewer->id,
+            ]);
+
+        $responseViewer->assertStatus(403);
     }
 }

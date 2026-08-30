@@ -1,5 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+<<<<<<< HEAD
+import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
+=======
 import { Head, Link, useForm, router } from '@inertiajs/react';
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 import { PageProps } from '@/types';
 import { Project } from '@/types/project';
 import DangerButton from '@/Components/DangerButton';
@@ -42,6 +46,11 @@ const formatDate = (value: string | null) => {
 };
 
 export default function Show({ project, users = [], taskCounts = { todo: 0, in_progress: 0, done: 0 } }: PageProps<{ project: Project; users?: { id: number; name: string; email?: string }[]; taskCounts?: { todo: number; in_progress: number; done: number } }>) {
+<<<<<<< HEAD
+    const { auth } = usePage().props as any;
+    const can = (permission: string) => auth.user?.role === 'super_admin' || auth.user?.permissions?.includes(permission);
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     const { delete: destroy } = useForm();
     const { data, setData, post, processing, reset } = useForm({
         user_id: '',
@@ -249,6 +258,54 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                             <h3 className="text-xl font-bold text-slate-900">Team Members</h3>
                         </div>
 
+<<<<<<< HEAD
+                        {can('projects.manage_members') && (
+                            <form onSubmit={handleAddMember} className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                <div>
+                                    <label htmlFor="user_id" className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                        User
+                                    </label>
+                                    <select
+                                        id="user_id"
+                                        value={data.user_id}
+                                        onChange={(e) => setData('user_id', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                    >
+                                        <option value="">Select a user</option>
+                                        {nonMembers.map((user) => (
+                                            <option key={user.id} value={String(user.id)}>
+                                                {user.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label htmlFor="role" className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                        Role
+                                    </label>
+                                    <select
+                                        id="role"
+                                        value={data.role}
+                                        onChange={(e) => setData('role', e.target.value)}
+                                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                                    >
+                                        <option value="project_manager">Project Manager</option>
+                                        <option value="member">Member</option>
+                                        <option value="viewer">Viewer</option>
+                                    </select>
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {processing ? 'Adding...' : 'Add Member'}
+                                </button>
+                            </form>
+                        )}
+=======
                         <form onSubmit={handleAddMember} className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                             <div>
                                 <label htmlFor="user_id" className="mb-1 block text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
@@ -293,6 +350,7 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                                 {processing ? 'Adding...' : 'Add Member'}
                             </button>
                         </form>
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 
                         <div className="mt-5 space-y-3">
                             {members.length > 0 ? (
@@ -322,7 +380,11 @@ export default function Show({ project, users = [], taskCounts = { todo: 0, in_p
                                             }`}>
                                                 {(member as any).pivot?.role || 'Member'}
                                             </span>
+<<<<<<< HEAD
+                                            {member.id !== project.manager_id && can('projects.manage_members') && (
+=======
                                             {member.id !== project.manager_id && (
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                                                 <button
                                                     onClick={() => handleRemoveMember(member.id)}
                                                     className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition"

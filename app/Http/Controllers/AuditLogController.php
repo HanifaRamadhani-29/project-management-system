@@ -29,7 +29,14 @@ class AuditLogController extends Controller
      */
     public function index(Request $request): Response
     {
+<<<<<<< HEAD
+        $user = $request->user();
+        if ($user->role !== 'super_admin' && !$user->can('audit_logs.view')) {
+            abort(403, 'Unauthorized action. You do not have permission to view audit logs.');
+        }
+=======
         $this->authorizeSuperAdmin();
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 
         $query = AuditLog::with('user:id,name,email')
             ->latest('created_at');

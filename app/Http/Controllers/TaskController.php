@@ -55,7 +55,11 @@ class TaskController extends Controller
         $project->load('members');
 
         $tasks = $project->tasks()
+<<<<<<< HEAD
+            ->with(['assignee', 'reporter', 'comments.user', 'attachments', 'labels', 'subtasks', 'dependencies', 'approvals.requestedBy', 'approvals.reviewedBy'])
+=======
             ->with(['assignee', 'reporter', 'comments.user', 'attachments', 'labels', 'subtasks', 'dependencies'])
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
             ->whereNull('parent_id')
             ->orderBy('order')
             ->get();
@@ -75,6 +79,13 @@ class TaskController extends Controller
 
     public function store(StoreTaskRequest $request, Project $project): RedirectResponse
     {
+<<<<<<< HEAD
+        if (auth()->user()->role !== 'super_admin' && !auth()->user()->can('tasks.create')) {
+            abort(403, 'Unauthorized action. You do not have permission to create tasks.');
+        }
+
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $this->authorize('create', [Task::class, $project]);
 
         $task = $this->taskService->createTask($project, $request->validated(), auth()->user());
@@ -93,6 +104,13 @@ class TaskController extends Controller
 
     public function destroy(Project $project, Task $task): RedirectResponse
     {
+<<<<<<< HEAD
+        if (auth()->user()->role !== 'super_admin' && !auth()->user()->can('tasks.delete')) {
+            abort(403, 'Unauthorized action. You do not have permission to delete tasks.');
+        }
+
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $this->authorize('delete', $task);
 
         $this->taskService->deleteTask($task);
@@ -127,6 +145,14 @@ class TaskController extends Controller
                 'success' => true,
                 'message' => 'Tasks reordered successfully.',
             ]);
+<<<<<<< HEAD
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], $e->getStatusCode());
+=======
+>>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         } catch (\InvalidArgumentException $e) {
             return response()->json([
                 'success' => false,
