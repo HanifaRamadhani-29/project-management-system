@@ -22,10 +22,7 @@ export interface Task {
     attachments?: any[];
     subtasks?: any[];
     dependencies?: any[];
-<<<<<<< HEAD
     approvals?: any[];
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 }
 
 export interface Column {

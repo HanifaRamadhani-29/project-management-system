@@ -16,11 +16,8 @@ interface TaskDetailPanelProps {
 export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, allLabels = [], allProjectTasks = [], users = [] }: TaskDetailPanelProps) {
     const { auth } = usePage().props as any;
     const currentUser = auth.user;
-<<<<<<< HEAD
     const hasPermission = (perm: string) => 
         currentUser?.role === 'super_admin' || currentUser?.permissions?.includes(perm);
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     const commentsEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
 
@@ -136,7 +133,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
         });
     };
 
-<<<<<<< HEAD
     const handleDeleteAttachment = (attachmentId: number) => {
         if (confirm('Apakah Anda yakin ingin menghapus file ini?')) {
             router.delete(route('attachments.destroy', attachmentId), {
@@ -206,8 +202,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
         }
     };
 
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     const formatPriority = (priority: string) => {
         switch (priority) {
             case 'critical': return <span className="px-2 py-1 rounded bg-rose-100 text-rose-700 text-xs font-bold uppercase">Critical</span>;
@@ -227,10 +221,7 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
     const subtasks = task?.subtasks || [];
     const dependencies = task?.dependencies || [];
     const labels = task?.labels || [];
-<<<<<<< HEAD
     const approvals = task?.approvals || [];
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 
     // Local State for forms
     const [subtaskTitle, setSubtaskTitle] = useState('');
@@ -297,7 +288,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                     <div className="flex items-center gap-3">
                         <span className="text-sm font-bold text-slate-400">#{task.id}</span>
                         {formatStatus(task.status)}
-<<<<<<< HEAD
                         {hasPermission('tasks.delete') && (
                             <button
                                 onClick={handleDeleteTask}
@@ -307,8 +297,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         )}
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                     </div>
                     <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition">
                         <X className="w-5 h-5" />
@@ -319,7 +307,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                 <div className="flex-1 overflow-y-auto">
                     <div className="p-6 space-y-8">
                         
-<<<<<<< HEAD
                         {/* Approval Action Banner */}
                         {task.status === 'in_progress' && (
                             <div className="p-4 bg-indigo-50 border border-indigo-150 rounded-xl flex items-center justify-between">
@@ -362,9 +349,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                 </div>
                             </div>
                         )}
-
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                         {/* Title & Description */}
                         <div className="space-y-4">
                             <h2 className="text-2xl font-bold text-slate-800">{task.title}</h2>
@@ -500,7 +484,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                     <Paperclip className="w-4 h-4 text-slate-500" />
                                     Attachments
                                 </h3>
-<<<<<<< HEAD
                                 {hasPermission('files.upload') && (
                                     <form id="attachment-form" onSubmit={submitAttachment}>
                                         <label className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition">
@@ -509,14 +492,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                         </label>
                                     </form>
                                 )}
-=======
-                                <form id="attachment-form" onSubmit={submitAttachment}>
-                                    <label className="cursor-pointer text-xs font-bold text-indigo-600 hover:text-indigo-500 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition">
-                                        + Add File
-                                        <input type="file" className="hidden" onChange={handleFileUpload} />
-                                    </label>
-                                </form>
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                             </div>
                             
                             {attachments.length > 0 ? (
@@ -533,7 +508,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1">
-<<<<<<< HEAD
                                                 <a href={route('attachments.download', file.id)} className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
                                                     <Download className="w-4 h-4" />
                                                 </a>
@@ -544,11 +518,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                                 >
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
-=======
-                                                <a href={`/storage/${file.file_path}`} download className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
-                                                    <Download className="w-4 h-4" />
-                                                </a>
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                                             </div>
                                         </div>
                                     ))}
@@ -558,7 +527,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                             )}
                         </div>
 
-<<<<<<< HEAD
                         {/* Approval History Section */}
                         {approvals.length > 0 && (
                             <div className="space-y-4">
@@ -612,9 +580,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                 </div>
                             </div>
                         )}
-
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                         {/* Comments Section */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">
@@ -678,25 +643,15 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                                 type="text"
                                 value={commentData.content}
                                 onChange={handleCommentChange}
-<<<<<<< HEAD
                                 placeholder={hasPermission('comments.create') ? "Write a comment... (Type @ to mention)" : "You do not have permission to post comments"}
                                 className="w-full text-sm border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-4 py-2 disabled:bg-slate-100 disabled:text-slate-400"
                                 required
                                 disabled={!hasPermission('comments.create')}
-=======
-                                placeholder="Write a comment... (Type @ to mention)"
-                                className="w-full text-sm border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl px-4 py-2"
-                                required
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                             />
                         </div>
                         <button
                             type="submit"
-<<<<<<< HEAD
                             disabled={processingComment || !commentData.content.trim() || !hasPermission('comments.create')}
-=======
-                            disabled={processingComment || !commentData.content.trim()}
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
                             className="p-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-xl shadow-sm transition"
                         >
                             <Send className="w-4 h-4" />
@@ -704,7 +659,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                     </form>
                 </div>
 
-<<<<<<< HEAD
             {/* Submit for Review Modal */}
             {showSubmitModal && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm">
@@ -775,9 +729,6 @@ export default function TaskDetailPanel({ task, isOpen, onClose, projectSlug, al
                     </div>
                 </div>
             )}
-
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
             </div>
         </div>
     );

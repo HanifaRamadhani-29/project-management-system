@@ -62,29 +62,17 @@ export default function Authenticated({
     const adminSection: { name: string; href: string; icon: any; active: boolean }[] = [];
     if (hasPermission('users.manage')) {
         adminSection.push({ name: "Users", href: route().has("users.index") ? route("users.index") : "/users", icon: Users, active: route().current("users.*") });
-<<<<<<< HEAD
     }
     if (user?.role === 'super_admin') {
         adminSection.push({ name: "Roles & Permissions", href: route().has("roles.permissions.index") ? route("roles.permissions.index") : "/roles/permissions", icon: ShieldCheck, active: route().current("roles.permissions.*") });
     }
     if (hasPermission('audit_logs.view')) {
         adminSection.push({ name: "Audit Logs", href: route().has("audit_logs.index") ? route("audit_logs.index") : "/audit-logs", icon: History, active: route().current("audit_logs.*") });
-=======
-        adminSection.push({ name: "Roles & Permissions", href: route().has("roles.permissions.index") ? route("roles.permissions.index") : "/roles/permissions", icon: ShieldCheck, active: route().current("roles.permissions.*") });
-<<<<<<< HEAD
-        adminSection.push({ name: "Audit Logs", href: "/audit-logs", icon: History, active: false });
-    }
-
-
-=======
-        adminSection.push({ name: "Audit Logs", href: route().has("audit_logs.index") ? route("audit_logs.index") : "/audit-logs", icon: History, active: route().current("audit_logs.*") });
     }
 
     if (isSuperAdmin || isPM) {
         adminSection.push({ name: "Reports", href: "/reports", icon: BarChart3, active: false });
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     }
->>>>>>> feature/project
 
     // Dynamic role badges
     const getRoleDetails = () => {

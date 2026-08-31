@@ -10,14 +10,11 @@ class CommentController extends Controller
 {
     public function store(Request $request, Task $task)
     {
-<<<<<<< HEAD
         $user = $request->user();
         if ($user->role !== 'super_admin' && !$user->can('comments.create')) {
             abort(403, 'Unauthorized action. You do not have permission to post comments.');
         }
 
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $this->authorize('comment', $task);
 
         $validated = $request->validate([

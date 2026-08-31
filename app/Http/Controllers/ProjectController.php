@@ -15,7 +15,6 @@ use Inertia\Inertia;
 class ProjectController extends Controller
 {
     use AuthorizesRequests;
-<<<<<<< HEAD
 
     protected $projectService;
 
@@ -27,42 +26,6 @@ class ProjectController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
-    {
-        $projects = Project::with(['manager', 'members'])
-            ->withCount(['tasks', 'tasks as completed_tasks_count' => function ($q) {
-                $q->where('status', 'done');
-            }])
-            ->latest()
-            ->paginate(9);
-
-        return Inertia::render('Projects/Index', [
-            'projects' => $projects,
-            'filters'  => $request->only(['search', 'status']),
-            'users'    => User::select('id', 'name', 'email', 'role')->get(),
-=======
-
-    protected $projectService;
-
-    public function __construct(ProjectService $projectService)
-    {
-        $this->projectService = $projectService;
-    }
-
-    /**
-     * Display a listing of the resource.
-     */
-<<<<<<< HEAD
-    public function index(\Illuminate\Http\Request $request)
-    {
-        $this->authorize('viewAny', Project::class);
-        $filters = $request->only(['search', 'status']);
-        $projects = $this->projectService->getAllProjects(auth()->user(), $filters);
-        
-        return inertia('Projects/Index', [
-            'projects' => $projects,
-            'filters' => $filters
-=======
     public function index(Request $request)
     {
         $this->authorize('viewAny', Project::class);
@@ -80,19 +43,27 @@ class ProjectController extends Controller
         if ($user->role !== 'super_admin') {
             $query->where(function ($q) use ($user) {
                 $q->where('manager_id', $user->id)
-                  ->orWhereHas('members', function ($m) use ($user) {
-                      $m->where('users.id', $user->id);
-                  });
+                    ->orWhereHas('members', function ($m) use ($user) {
+                        $m->where('users.id', $user->id);
+                    });
             });
         }
 
-        $projects = $query->latest()->paginate(9);
+        // Apply filters
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $projects = $query->latest()->paginate(9)->withQueryString();
 
         return Inertia::render('Projects/Index', [
             'projects' => $projects,
             'filters' => $request->only(['search', 'status']),
->>>>>>> feature/project
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
+            'users' => User::select('id', 'name', 'email', 'role')->get(),
         ]);
     }
 
@@ -112,16 +83,13 @@ class ProjectController extends Controller
      */
     public function store(StoreProjectRequest $request)
     {
-<<<<<<< HEAD
-        if (auth()->user()->role === 'member' || auth()->user()->role === 'viewer') {
-            abort(403, 'Unauthorized action. Members cannot create projects.');
-        }
-
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $this->authorize('create', Project::class);
-        $project = $this->projectService->createProject($request->validated(), auth()->user());
-        
+
+        /** @var \App\Models\User $currentUser */
+        $currentUser = $request->user(); // <-- Ganti auth()->user() jadi $request->user()
+
+        $project = $this->projectService->createProject($request->validated(), $currentUser);
+
         return redirect()->route('projects.index')->with('success', 'Project created successfully.');
     }
 
@@ -132,21 +100,7 @@ class ProjectController extends Controller
     {
         $this->authorize('view', $project);
 
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
         $project->load(['members', 'tasks', 'manager']);
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
-        $relations = ['members'];
-        if (class_exists('App\Models\Task')) {
-            $relations[] = 'tasks';
-        }
-        $project->load($relations);
-<<<<<<< HEAD
-=======
->>>>>>> feature/project
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $users = User::all();
 
         // Task counts for Task Overview
@@ -179,22 +133,33 @@ class ProjectController extends Controller
     /**
      * Update the specified resource in storage.
      */
+    /**
+     * Update the specified resource in storage.
+     */
     public function update(UpdateProjectRequest $request, Project $project)
     {
         $this->authorize('update', $project);
-        $this->projectService->updateProject($project, $request->validated(), auth()->user());
-        
+
+        /** @var \App\Models\User $currentUser */
+        $currentUser = $request->user(); // <-- Ganti auth()->user() jadi $request->user()
+
+        $this->projectService->updateProject($project, $request->validated(), $currentUser);
+
         return redirect()->route('projects.index')->with('success', 'Project updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Project $project)
+    public function destroy(Request $request, Project $project) // <-- Tambahkan Request $request
     {
         $this->authorize('delete', $project);
-        $this->projectService->deleteProject($project, auth()->user());
-        
+
+        /** @var \App\Models\User $currentUser */
+        $currentUser = $request->user(); // <-- Ganti auth()->user() jadi $request->user()
+
+        $this->projectService->deleteProject($project, $currentUser);
+
         return redirect()->route('projects.index')->with('success', 'Project deleted successfully.');
     }
 
@@ -214,7 +179,7 @@ class ProjectController extends Controller
         }
     }
 
-    public function addMember(\Illuminate\Http\Request $request, Project $project)
+    public function addMember(Request $request, Project $project)
     {
         $this->authorize('update', $project);
 
@@ -230,7 +195,7 @@ class ProjectController extends Controller
         return redirect()->back()->with('success', 'Member added successfully.');
     }
 
-    public function removeMember(Project $project, \App\Models\User $user)
+    public function removeMember(Project $project, User $user)
     {
         $this->authorize('update', $project);
 

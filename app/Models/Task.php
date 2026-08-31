@@ -23,13 +23,9 @@ class Task extends Model
         'deadline',
     ];
 
-<<<<<<< HEAD
     protected $casts = [
         'deadline' => 'date',
     ];
-
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     public function project()
     {
         return $this->belongsTo(Project::class);

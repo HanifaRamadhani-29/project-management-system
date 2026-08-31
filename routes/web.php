@@ -12,13 +12,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
-<<<<<<< HEAD
     return auth()->check()
         ? redirect()->route('dashboard')
         : redirect()->route('login');
-=======
-    return redirect()->route('login');
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');

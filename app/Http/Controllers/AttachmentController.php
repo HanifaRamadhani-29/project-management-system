@@ -11,14 +11,11 @@ class AttachmentController extends Controller
 {
     public function store(Request $request, Task $task)
     {
-<<<<<<< HEAD
         $user = $request->user();
         if ($user->role !== 'super_admin' && !$user->can('files.upload')) {
             abort(403, 'Unauthorized action. You do not have permission to upload files.');
         }
 
-=======
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
         $this->authorize('update', $task);
 
         $request->validate([
@@ -38,7 +35,6 @@ class AttachmentController extends Controller
         return back()->with('success', 'File attached.');
     }
 
-<<<<<<< HEAD
     public function download(Request $request, Attachment $attachment)
     {
         $user = $request->user();
@@ -67,17 +63,11 @@ class AttachmentController extends Controller
         if (!$isSuperAdmin && !$isProjectPM && !$user->can('update', $attachment->task)) {
             abort(403, 'Unauthorized action. Only authorized users can delete attachments.');
         }
-=======
-    public function destroy(Attachment $attachment)
-    {
-        $this->authorize('update', $attachment->task);
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
 
         if (Storage::disk('public')->exists($attachment->file_path)) {
             Storage::disk('public')->delete($attachment->file_path);
         }
 
-<<<<<<< HEAD
         // Log the audit event
         app(\App\Services\AuditLogService::class)->log(
             'ATTACHMENT_DELETED',
@@ -89,10 +79,5 @@ class AttachmentController extends Controller
         $attachment->delete();
 
         return back()->with('success', 'File deleted');
-=======
-        $attachment->delete();
-
-        return back()->with('success', 'Attachment deleted.');
->>>>>>> 327c57e36514433ef4dc95352f22ff7f27b4638b
     }
 }
